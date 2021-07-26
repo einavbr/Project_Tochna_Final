@@ -1,0 +1,1 @@
+# This file should conatain a test func for each func in spkmeans.py
