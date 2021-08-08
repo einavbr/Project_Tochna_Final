@@ -248,18 +248,18 @@ int main(int argc, char* argv[]) {
         freeMatrix(laplacian_mat, N);
         freeEigensArray(eigensArray, N);
     }
-    else if (!strcmp(goal, 'wam')) {
+    else if (!strcmp(goal, "wam")) {
         printMatrix(N, N, graph->weighted_mat);
     }
-    else if (!strcmp(goal, 'ddg')) {
+    else if (!strcmp(goal, "ddg")) {
         printMatrix(1, N, graph->diagonal_degree_array);
     }
-    else if (!strcmp(goal, 'lnorm')) {
+    else if (!strcmp(goal, "lnorm")) {
         laplacian_mat = allocateMatrix(N, N);
         runLnormFlow(graph, laplacian_mat, TRUE);
         freeMatrix(laplacian_mat, N);
     }
-    else if (!strcmp(goal, 'jacobi')) {
+    else if (!strcmp(goal, "jacobi")) {
         laplacian_mat = allocateMatrix(N, N);
         eigensArray = (Eigen*)malloc(N * N * sizeof(Eigen));
         runJacobiFlow(graph, laplacian_mat, eigensArray, TRUE);
