@@ -355,7 +355,7 @@ void calcU(Eigen** eigensArray, double** U) {
          * copy eigensArray[i]->eigenvector into the kIndex column of U 
          */
         for (j=0; j < N; j++) {
-            U[j][kIndex] = eigensArray[i]->eigenvector[j];
+            U[j][i] = eigensArray[i]->eigenvector[j];
         }
     }
 }   
