@@ -31,23 +31,49 @@ typedef struct Eigen {
     double* eigenvector;
 } Eigen;
 
-double calcEuclideanNorm(vector1, vector2);
+double calcEuclideanNorm(double* vector1, double* vector2, int DIM){
     /** TODO :
      * given two points, this function returns the euclidean norm 
-     */
+     */  
+    int i, euclidianNorm;
+    euclidianNorm = 0;
+    for(i=0; i< DIM; i++){
+        euclidianNorm += pow((vector1[i]-vector2[i]),2);
+    }
+    return pow(euclidianNorm, 0.5);
+}
+    
 
-void fillWeightedMat(vertices, weighted_mat);
+void fillWeightedMat(double** vertices, double** weighted_mat,int N, int DIM){
     /** TODO : 
      * given a list of vectors, this fuction should return a matrix of weights 
      * for each pair of vectors
      * NOTE : remember this is a symetric matrix, we only need to compute for i<j
      * and put the result in 2 slots
      */
-
-void fillDiagonalDegreeArray(vertices, weighted_mat, diagonal_degree_array);
-    /** TODO : 
+    int i,j,euclidianNorm,pow;
+    for(i=0 ; i<N ; i++){
+        weighted_mat[i][i] = 0;
+        for(j=i+1; j<DIM ; j++){
+            euclidianNorm = calcEuclideanNorm(vertices[i],vertices[j], DIM);
+            pow = -euclidianNorm/2;
+            weighted_mat[i][j] = weighted_mat[j][i] = exp(pow);
+        }
+    }
+}
+    
+void fillDiagonalDegreeArray(double** weighted_mat, double* diagonal_degree_array, int N){
+     /** TODO : 
      * given a list of vectors, this fuction should return the Diagonal Degree Matrix ^ -0.5 
      */
+    int i,j;
+    for(i=0; i<N; i++){
+        for(j=0;j<N;j++){
+            diagonal_degree_array[i]+=weighted_mat[i][j];
+        }
+    }
+}
+  
 
 void constructGraph(FILE* file, double** vertices, double** weighted_mat, double* diagonal_degree_array, Graph* graph){
     char* point, *line;
@@ -62,7 +88,7 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
         point = strtok(line, ",");
         while (point != NULL) {
             vertices[i][j] = atof(point);
-            /* point = strtok(NULL, ","); */
+            point = strtok(NULL, ",");
             j = j + 1;
         }
         i = i + 1;
@@ -71,23 +97,25 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
     N = i;
 
     /** TODO:
-     * create fillWeightedMat(vertices, weighted_mat)
-     * create fillDiagonalDegreeArray(vertices, weighted_mat, diagonal_degree_array)
+     * create fillWeightedMat(vertices, weighted_mat, N, DIM)
+     * create fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N)
      */
+    fillWeightedMat(vertices, weighted_mat, N, DIM);
+    fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N);
 
     graph->vertices = vertices;
     graph->weighted_mat = weighted_mat;
-
+    graph->diagonal_degree_array = diagonal_degree_array;
     free(line);
 }
 
-void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool) {
+void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool);
     /** TODO: 
      * Calculate and output the Normalized Graph Laplacian as described in 1.1.3.
      * The function should print appropriate output if print == True
      * fill the provided Laplacian matrix 
      */
-}
+
 
 double eigenComperator(Eigen* eigen1, Eigen* eigen2);
     /** TODO: 
@@ -102,7 +130,7 @@ void sortEigens(Eigen* eigensArray);
      * Use qsort() to sort the array.
      */
 
-void runJacobiFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray, int print_bool) {
+void runJacobiFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray, int print_bool);
     /** TODO:
      * Calculate and output the eigenvalues and eigenvectors as described in 1.2.1.
      * 
@@ -113,9 +141,9 @@ void runJacobiFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray, int
      * and the eigensArray should be ORDERED with all eigenvalues and eigenvectors. 
      * Use sortEigens()
      */
-}
 
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray) {
+
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray);
     /** TODO: Perform full spectral kmeans as described in 1.
      * The function should print appropriate output
      */
@@ -129,6 +157,19 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray) {
      * 6. run_kmeanspp(T)
      * 7. Assign points to relevant clusters as described in Algorithm1 of project description
      */
+
+
+int howManyLines(FILE* file) {
+    int counterOfLines; /* Line counter (result) */
+    char c;  /* To store a character read from file */
+    fseek(file, 0, SEEK_SET);
+    counterOfLines = 1;  
+    /* Extract characters from file and store in character c */
+    for (c = getc(file); c != EOF; c = getc(file))
+        if (c == '\n') /* Increment count if this character is newline */
+            counterOfLines = counterOfLines + 1;
+
+    return counterOfLines;
 }
 
 int pointSize(FILE* file) {
@@ -160,6 +201,14 @@ void printMatrix(int rows, int cols, double** matrix) {
     printf("\n\n");
 }
 
+void printArray(int len, double* matrix) {
+    int i; 
+    for (i = 0; i < len; i++) {
+        printf("%.4f,", matrix[i]);
+    }
+    printf("\n\n");
+}
+
 double** allocateMatrix(int rows, int cols){
     int i;
     double** matrix;
@@ -173,7 +222,7 @@ double** allocateMatrix(int rows, int cols){
 
 void freeEigensArray (Eigen* freeEigensArray, int N) {
     int i;
-    for (int i=0 ; i<N ; i++) {
+    for (i=0 ; i<N ; i++) {
         free(freeEigensArray[i].eigenvector);
     }
     free(freeEigensArray);
@@ -189,35 +238,49 @@ void freeMatrix(double **matrix, int rowsLen){
 
 /** MAIN **/
 int main(int argc, char* argv[]) {
+    /*
     double** weighted_mat, **vertices, **laplacian_mat, *diagonal_degree_array;
     char* file_name, *goal;
     FILE* file;
     Graph* graph;
     Eigen* eigensArray;
+    */
+   double** weighted_mat, **vertices, *diagonal_degree_array;
+    char* file_name, *goal;
+    FILE* file;
+    Graph* graph;
 
+    printf("In Main");
+    printf("\n");
     assert((argc == 4) && INVALID_INPUT); 
 
     K = atoi(argv[1]);
-    if (!K || K < 0) {
-        if (!K) {
-            printf("%s", ERROR_OCCURED);
-        }
-        else {
-            printf("%s", INVALID_INPUT);
-        }
+    printf("K is:%d",K);
+    printf("\n");
+    if ( K < 0) {
+        printf("%s", INVALID_INPUT);
         exit(1);
     } 
     /* NOTE : if k == 0 - use heuristic */
 
     file_name = argv[3];
+    printf("file_name is:%s",file_name);
+    printf("\n");
     if (!file_name) {
         printf("%s", ERROR_OCCURED);
+        printf("entered filename is not defiened");
+        printf("\n");
         exit(1);
     }
-
+    
     file = fopen(file_name, "r");
     N = howManyLines(file);
     DIM = pointSize(file);
+
+    printf("N is:%d",N);
+    printf("\n");
+    printf("DIM is:%d",DIM);
+    printf("\n");
 
     if (K >= N){
         printf("%s", INVALID_INPUT);
@@ -227,8 +290,12 @@ int main(int argc, char* argv[]) {
     goal = argv[2];
     if (!goal) {
         printf("%s", ERROR_OCCURED);
+        printf("entered goal is not defiened");
+        printf("\n");
         exit(1);
     } 
+    printf("goal is:%s",goal);
+    printf("\n");
 
     /* Create the graph */
     vertices = allocateMatrix(N, DIM);
@@ -237,11 +304,17 @@ int main(int argc, char* argv[]) {
     graph = (Graph*) malloc(sizeof (Graph));
     constructGraph(file, vertices, weighted_mat, diagonal_degree_array, graph);
 
+    printf("vertices:");
+    printf("\n");
     printMatrix(N, DIM, vertices);
+    printf("weighted mat:");
+    printf("\n");
     printMatrix(N, N, weighted_mat);
-    printMatrix(1, N, diagonal_degree_array);
-
-    if (!strcmp(goal, 'spk')) {
+    printf("diagonal array:");
+    printf("\n");
+    printArray(N, diagonal_degree_array);
+/*
+    if (!strcmp(goal, "spk")) {
         laplacian_mat = allocateMatrix(N, N);
         eigensArray = (Eigen*)malloc(N * N * sizeof(Eigen));
         runSpkFlow(graph, laplacian_mat, eigensArray);
@@ -252,7 +325,7 @@ int main(int argc, char* argv[]) {
         printMatrix(N, N, graph->weighted_mat);
     }
     else if (!strcmp(goal, "ddg")) {
-        printMatrix(1, N, graph->diagonal_degree_array);
+        printArray(N, graph->diagonal_degree_array);
     }
     else if (!strcmp(goal, "lnorm")) {
         laplacian_mat = allocateMatrix(N, N);
@@ -267,14 +340,17 @@ int main(int argc, char* argv[]) {
         freeEigensArray(eigensArray, N);
     }
     else {
-        print("%s", INVALID_INPUT);
+        printf("%s", INVALID_INPUT);
         exit(1);
-    }
+    }*/
     
     fclose(file);
+    /*
     free(diagonal_degree_array);
     freeMatrix(weighted_mat, N);
     freeMatrix(vertices, N);
+    */
+   return 1; 
 }
 
 
