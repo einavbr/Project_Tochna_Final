@@ -9,10 +9,11 @@
 #define INVALID_INPUT "Invalid Input!"
 #define ERROR_OCCURED "An Error Has Occured"
 #define MAX_ITER 100
+#define EPSILON 0.001
 
 int N, K, DIM;
 
-/* ------------------------------ GRAPH IMPLEMENTATION ------------------------------------------------------------ */
+/* ------------------------------ GRAPH IMPLEMENTATION ---------------------------------------------------- */
 
 typedef struct Graph {
     /** A graph contains:
@@ -31,18 +32,15 @@ typedef struct Eigen {
     double* eigenvector;
 } Eigen;
 
-double calcEuclideanNorm(double* vector1, double* vector2, int DIM){
-    /** TODO :
-     * given two points, this function returns the euclidean norm 
-     */  
-    int i, euclidianNorm;
-    euclidianNorm = 0;
-    for(i=0; i< DIM; i++){
-        euclidianNorm += pow((vector1[i]-vector2[i]),2);
-    }
-    return pow(euclidianNorm, 0.5);
+Eigen* allocateEigen(){
+    Eigen* eigen;
+
+    eigen = (Eigen*)malloc(sizeof(Eigen));
+    eigen->eigenvector = (double*)malloc(N * sizeof(double))
 }
-    
+
+
+/** ---------------------------------- GRAPH FUNCTIONS ---------------------------------------- **/
 
 void fillWeightedMat(double** vertices, double** weighted_mat,int N, int DIM){
     /** TODO : 
@@ -109,80 +107,17 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
     free(line);
 }
 
-void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool);
-    /** TODO: 
-     * Calculate and output the Normalized Graph Laplacian as described in 1.1.3.
-     * The function should print appropriate output if print == True
-     * fill the provided Laplacian matrix 
-     */
+/** ---------------------------------- PRINTS ---------------------------------------- **/
 
-
-double eigenComperator(Eigen* eigen1, Eigen* eigen2);
-    /** TODO: 
-     * This is a compare function which will take 2 elements from the eigen array 
-     * and return eigen1->eigenvalue - eigen2->eigenvalue
-     */
-
-void sortEigens(Eigen* eigensArray);
-    /** TODO: 
-     * create eigen couples for each eigenvalue on the A matrix's diagonal and it's corresponding
-     * eigenvector from the V matrix, and fill the eigenArray with them.
-     * Use qsort() to sort the array.
-     */
-
-void runJacobiFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray, int print_bool);
-    /** TODO:
-     * Calculate and output the eigenvalues and eigenvectors as described in 1.2.1.
-     * 
-     * Once done, the values on the diagonal of A are eigenvalues
-     * and the columns of V are eigenvectors 
-     * 
-     * The function should print appropriate output if print == True
-     * and the eigensArray should be ORDERED with all eigenvalues and eigenvectors. 
-     * Use sortEigens()
-     */
-
-
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray);
-    /** TODO: Perform full spectral kmeans as described in 1.
-     * The function should print appropriate output
-     */
-
-    /** Algorithm:
-     * 1. runLnormFlow
-     * 2. runJacobiFlow
-     * 3. if k==0: k = run_eigengap_heuristic(eigenvalues)
-     * 4. U = transpose_matrix(eigenvectors[:k])
-     * 5. T = renormalize_mat(U)
-     * 6. run_kmeanspp(T)
-     * 7. Assign points to relevant clusters as described in Algorithm1 of project description
-     */
-
-
-int howManyLines(FILE* file) {
-    int counterOfLines; /* Line counter (result) */
-    char c;  /* To store a character read from file */
-    fseek(file, 0, SEEK_SET);
-    counterOfLines = 1;  
-    /* Extract characters from file and store in character c */
-    for (c = getc(file); c != EOF; c = getc(file))
-        if (c == '\n') /* Increment count if this character is newline */
-            counterOfLines = counterOfLines + 1;
-
-    return counterOfLines;
-}
-
-int pointSize(FILE* file) {
-    int numOfCoords;
-    char c;
-
-    numOfCoords = 1;
-    fseek(file, 0, SEEK_SET);
-    for (c = getc(file); c != '\n'; c = getc(file))
-        if (c == ',') {
-            numOfCoords = numOfCoords + 1;
-        }
-    return numOfCoords;
+void printEigens(Eigen** eigens, int n){
+    int i;
+    
+    for (i=0; i < n; i++) {
+        printf("%lf, ", eigen->eigenvalue);
+    }
+    for (i=0; i < n; i++) {
+        printMatrix(1, N, eigen->eigenvector);
+    }
 }
 
 void printMatrix(int rows, int cols, double** matrix) {
@@ -209,16 +144,20 @@ void printArray(int len, double* matrix) {
     printf("\n\n");
 }
 
+/** ---------------------------------- ALLOCATIONS ---------------------------------------- **/
+
 double** allocateMatrix(int rows, int cols){
     int i;
     double** matrix;
     
-    matrix = (double**)malloc((rows) * sizeof(double*));
+    matrix = (double**)calloc(rows, sizeof(double*));
     for (i=0 ; i< rows; i++){
-        matrix[i] = (double*)malloc(cols * sizeof(double));
+        matrix[i] = (double*)calloc(cols, sizeof(double));
     }
     return matrix;
 }
+
+/** -------------------------------- FREE -------------------------------------------------- **/
 
 void freeEigensArray (Eigen* freeEigensArray, int N) {
     int i;
@@ -234,6 +173,268 @@ void freeMatrix(double **matrix, int rowsLen){
         free(matrix[i]);
     }
     free(matrix);
+}
+
+/** ---------------------------------- CALCULATIONS ---------------------------------------- **/
+
+
+int howManyLines(FILE* file) {
+    int counterOfLines; /* Line counter (result) */
+    char c;  /* To store a character read from file */
+    fseek(file, 0, SEEK_SET);
+    counterOfLines = 1;  
+    /* Extract characters from file and store in character c */
+    for (c = getc(file); c != EOF; c = getc(file))
+        if (c == '\n') /* Increment count if this character is newline */
+            counterOfLines = counterOfLines + 1;
+
+    return counterOfLines;
+
+int pointSize(FILE* file) {
+    int numOfCoords;
+    char c;
+
+    numOfCoords = 1;
+    fseek(file, 0, SEEK_SET);
+    for (c = getc(file); c != '\n'; c = getc(file))
+        if (c == ',') {
+            numOfCoords = numOfCoords + 1;
+        }
+    return numOfCoords;
+}
+
+void memcpy_matrix(double** src, double** dest, int rows, int cols) {
+    int i;
+    for (i=0 ; i<rows; i++){
+        memcpy(dest[i], src[i], cols);
+    }
+}
+
+void transposeSquareMatrix(double** matrix, int N) {
+    int i, j;
+    double temp;
+
+    for(i=0; i < N; i++) {
+        for(j=0; j < i; j++) {
+            temp = matrix[i][j];
+            matrix[i][j] = matrix[j][i];
+            matrix[j][i] = temp;
+        }
+    }
+}
+
+double calcEuclideanNorm(double* vector1, double* vector2);
+    /** TODO :
+     * given two points, this function returns the euclidean norm 
+     */  
+    int i, euclidianNorm;
+    euclidianNorm = 0;
+    for(i=0; i< DIM; i++){
+        euclidianNorm += pow((vector1[i]-vector2[i]),2);
+    }
+    return pow(euclidianNorm, 0.5);
+}
+
+double eigenComperator(Eigen* eigen1, Eigen* eigen2);
+    /**
+     * This is a compare function which will take 2 elements from the eigen array 
+     * and return eigen1->eigenvalue - eigen2->eigenvalue
+     */
+    if(eigen1->eigenvalue < eigen2->eigenvalue) {
+        return 0;
+    }
+    return 1;
+
+void calcOff(double** mat) {
+    int i, j;
+    double sumTot, sumDiag, powVal;
+
+    sumTot = 0;
+    sumDiag = 0;
+    for (i = 0; i < N ; i++) {
+        for (j = 0; j < N ; j++) {
+            powVal = pow(mat[i][j], 2);
+            if (i == j) {
+                sumDiag += powVal;
+            }
+            sumTot += powVal
+        }
+    }
+    return (sqrt(sum) - sumDiag);
+}
+
+bool is_diagonal(double** A, double** A_tag);
+    /** TODO: calculate the convergence.
+     * return True if the result is smaller than epsilon = 0.001
+     */
+    double offA, offA_tag;
+
+    offA = calcOff(A)
+    offA_tag = calcOff(A_tag);
+
+    return (offA - offA_tag <= EPSILON)
+
+double* obtainCT(double A_ii, double A_jj, double A_ij) {
+    /** given a pivot value, return c and t as explained in the project */
+    double theta, c, t, s;
+    int sign;
+
+    printf('A_ij = %lf, A_ii = %lf, A_jj = %lf', A_ij, A_ii, A_jj);
+    theta = (A_jj - A_ii) / A_ij;
+    if (theta >= 0) {
+        sign = 1;
+    }
+    else {
+        sign = -1;
+    }
+    printf('theta = %lf, sign = %d', theta, sign);
+    t = sign / (math.abs(theta)+math.sqrt(math.pow(theta,2) + 1));
+    c = 1 / math.sqrt(math.pow(t,2) + 1);
+    return {c, t};
+}
+
+void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, double s) {
+    int r;
+
+    memcpy_matrix(A, A_tag, N);
+    A_tag[pivot_i][pivot_i] = pow(c,2) * A[pivot_i][pivot_i] + pow(s,2) * A[pivot_j][pivot_j] - 2 * s * c * A[pivot_i][pivot_j];
+    A_tag[pivot_j][pivot_j] = pow(c,2) * A[pivot_i][pivot_i] + pow(s,2) * A[pivot_j][pivot_j] + 2 * s * c * A[pivot_i][pivot_j];
+    A_tag[pivot_i][pivot_j] = 0;
+    for (r = 0; r < N; r++) {
+        if (r == pivot_i || r == pivot_j) {
+            continue;
+        }
+        A_tag[r][pivot_i] = c * A[r][pivot_i] - s * A[r][pivot_j];
+        A_tag[r][pivot_j] = c * A[r][pivot_j] + s * A[r][pivot_i];
+    }
+}
+
+calcV(double** V, double c, double s, int pivot_i, int pivot_j) {
+    V[pivot_i][pivot_i] = V[pivot_i][pivot_i] * c;
+    V[pivot_j][pivot_j] = V[pivot_j][pivot_j] * c;
+    V[pivot_i][pivot_j] = V[pivot_i][pivot_j] * s;
+    V[pivot_j][pivot_i] = V[pivot_j][pivot_i] * (-1 * s);
+}
+
+/** ---------------------------------- FLOWS ---------------------------------------- **/
+
+void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool);
+    /** TODO: 
+     * Calculate and output the Normalized Graph Laplacian as described in 1.1.3.
+     * The function should print appropriate output if print == True
+     * fill the provided Laplacian matrix 
+     */
+    int i, j;
+    double mechane, mone;
+
+    for (i=0; i < N; i++){
+        for (j=i; j < N; j++){
+            if i == j{
+                laplacian_mat[i][j] = 1.0;
+            }
+            mechane = graph->diagonal_degree_array[i] * graph->diagonal_degree_array[j];
+            mone = graph->weighted_mat[i][j];
+            laplacian_mat[i][j] = 1 - (mechane / mone);
+            laplacian_mat[j][i] = 1 - (mechane / mone);
+        }
+    }
+
+    if (print_bool){
+        printMatrix(N, N, laplacian_mat);
+    }
+}
+
+void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool) {
+    /** 
+     * Calculate and output the eigenvalues and eigenvectors as described in 1.2.1.
+     * 
+     * Once done, the values on the diagonal of A are eigenvalues
+     * and the columns of V are eigenvectors 
+     * 
+     * The function should print appropriate output if print == True
+     * and the eigensArray should be ORDERED with all eigenvalues and eigenvectors. 
+     * Use sortEigens()
+     */
+    int i, j, pivot_i, pivot_j;
+    double pivot, c, t, s;
+    double* c_t;
+    double** A_tag, **V;
+
+    /* first A mat is the laplacian */
+    runLnormFlow(graph, A, FALSE);
+    A_tag = allocateMatrix(N, N);
+    V = allocateMatrix(N, N);
+    for (i=0 ; i<N ; i++) {
+        V[i][i] = 1;
+    }
+
+    do {
+        /* calc pivot */
+        pivot = 0;
+        pivot_i = -1;
+        pivot_j = -1;
+        for (i=0; i < N; i++){
+            for (j=0; j < N; j++){
+                if (i != j){
+                    if (A[i][j] > pivot){
+                        pivot = A[i][j];
+                        pivot_i = i;
+                        pivot_j = j;
+                    }
+                }
+            }
+        }
+
+        /* calc c,t,s */
+        c_t = obtainCT(A[pivot_i][pivot_i], A[pivot_j][pivot_j], pivot);
+        c = c_t[0];
+        t = c_t[1];
+        s = c * t;
+
+        /* transform A using "Relation between A and A'" */
+        calcATag(A, A_tag, pivot_i, pivot_j);
+
+        calcV(V, c, s, pivot_i, pivot_j);
+        
+    } while (!is_diagonal(A));
+
+    transposeSquareMatrix(V, N);
+    for (int i = 0; i < N ; i++) {
+       eigensArray[i] = allocateEigen();
+       eigensArray[i]->eigenvalue = A_tag[i][i];
+       memcpy(eigensArray[i]->eigenvector, V[i], N);
+    }
+
+    freeMatrix(A_tag);
+    freeMatrix(V);
+
+    qsort(eigensArray, N, sizeof(Eigen*), eigenComperator);
+
+    if (print_bool){
+        printEigens(eigensArray);
+    }
+}
+
+
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray){
+    /** TODO: Perform full spectral kmeans as described in 1.
+     * The function should print appropriate output
+     */
+
+    /** Algorithm:
+     * 1. runLnormFlow (included in runJacobiFlow)
+     * 2. runJacobiFlow
+     * 3. if k==0: k = run_eigengap_heuristic(eigenvalues)
+     * 4. U = transpose_matrix(eigenvectors[:k])
+     * 5. T = renormalize_mat(U)
+     * 6. run_kmeanspp(T)
+     * 7. Assign points to relevant clusters as described in Algorithm1 of project description
+     */
+
+    runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
+    if (K == 0) {
+        runEigengapHeuristic
+    }
 }
 
 /** MAIN **/
@@ -334,7 +535,7 @@ int main(int argc, char* argv[]) {
     }
     else if (!strcmp(goal, "jacobi")) {
         laplacian_mat = allocateMatrix(N, N);
-        eigensArray = (Eigen*)malloc(N * N * sizeof(Eigen));
+        eigensArray = (Eigen**)malloc(N * sizeof(Eigen*));
         runJacobiFlow(graph, laplacian_mat, eigensArray, TRUE);
         freeMatrix(laplacian_mat, N);
         freeEigensArray(eigensArray, N);
