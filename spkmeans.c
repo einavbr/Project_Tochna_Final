@@ -346,6 +346,38 @@ void calcV(double** V, double c, double s, int pivot_i, int pivot_j) {
     V[pivot_j][pivot_i] = V[pivot_j][pivot_i] * (-1 * s);
 }
 
+void calcU(Eigen** eigensArray, double** U) {
+    int i, j;
+
+    for (i = 0; i < K; i++) {
+        /** 
+         * eigensArray[i]->eigenvector is the next eigenvector in U 
+         * copy eigensArray[i]->eigenvector into the kIndex column of U 
+         */
+        for (j=0; j < N; j++) {
+            U[j][kIndex] = eigensArray[i]->eigenvector[j];
+        }
+    }
+}   
+
+int runEigengapHeuristic(Eigen** eigensArray) {
+    int i, maxI;
+    double gap, maxGap;
+
+    maxI = -1
+    maxGap = -1.0;
+
+    for (i=1; i < N/2 ; i++) {
+        gap = eigensArray[i]->eigenvalue - eigensArray[i-1]->eigenvalue;
+        if (gap > maxGap) {
+            maxI = i;
+            maxGap = gap;
+        }
+    }
+
+    return maxI
+}
+
 /** ---------------------------------- FLOWS ---------------------------------------- **/
 
 void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
@@ -458,11 +490,14 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
      * 6. run_kmeanspp(T)
      * 7. Assign points to relevant clusters as described in Algorithm1 of project description
      */
+    double** U;
 
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
     if (K == 0) {
-       /* runEigengapHeuristic;*/
+        K = runEigengapHeuristic;
     }
+    U = allocateMatrix(N, K);
+    calcU(eigensArray, U);
 }
 
 /** MAIN **/
