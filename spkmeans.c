@@ -14,6 +14,10 @@
 
 int N, K, DIM;
 
+double calcEuclideanNorm(double* vector1, double* vector2);
+void printMatrix(int rows, int cols, double** matrix);
+void printArray(int len, double* matrix);
+
 /* ------------------------------ GRAPH IMPLEMENTATION ---------------------------------------------------- */
 
 typedef struct Graph {
@@ -33,30 +37,25 @@ typedef struct Eigen {
     double* eigenvector;
 } Eigen;
 
-Eigen* allocateEigen(){
-    Eigen* eigen;
-
-    eigen = (Eigen*)malloc(sizeof(Eigen));
-    eigen->eigenvector = (double*)malloc(N * sizeof(double));
-}
-
-
 /** ---------------------------------- GRAPH FUNCTIONS ---------------------------------------- **/
 
-void fillWeightedMat(double** vertices, double** weighted_mat,int N, int DIM){
+void fillWeightedMat(double** vertices, double** weighted_mat,int N){
     /** TODO : 
      * given a list of vectors, this fuction should return a matrix of weights 
      * for each pair of vectors
      * NOTE : remember this is a symetric matrix, we only need to compute for i<j
      * and put the result in 2 slots
      */
-    int i,j,euclidianNorm,pow;
+    int i,j;
+    double euclidianNorm,power;
     for(i=0 ; i<N ; i++){
         weighted_mat[i][i] = 0;
-        for(j=i+1; j<DIM ; j++){
-            euclidianNorm = calcEuclideanNorm(vertices[i],vertices[j], DIM);
-            pow = -euclidianNorm/2;
-            weighted_mat[i][j] = weighted_mat[j][i] = exp(pow);
+        for(j=i+1; j<N ; j++){
+            euclidianNorm = calcEuclideanNorm(vertices[i],vertices[j]);
+            power = -euclidianNorm/2;
+            weighted_mat[i][j] = weighted_mat[j][i] = exp(power);
+            printf("weighted matrix in %d,%d is: %f",i,j,exp(power));
+            printf("\n");
         }
     }
 }
@@ -68,7 +67,9 @@ void fillDiagonalDegreeArray(double** weighted_mat, double* diagonal_degree_arra
     int i,j;
     for(i=0; i<N; i++){
         for(j=0;j<N;j++){
-            diagonal_degree_array[i]+=weighted_mat[i][j];
+            printf("i,j: %d,%d\n", i,j); 
+            printf("w_ij: %f", weighted_mat[i][j]);
+            diagonal_degree_array[i] = diagonal_degree_array[i] + weighted_mat[i][j];
         }
     }
 }
@@ -98,7 +99,7 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
      * create fillWeightedMat(vertices, weighted_mat, N, DIM)
      * create fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N)
      */
-    fillWeightedMat(vertices, weighted_mat, N, DIM);
+    fillWeightedMat(vertices, weighted_mat, N);
     fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N);
 
     graph->vertices = vertices;
@@ -113,10 +114,10 @@ void printEigens(Eigen** eigens, int n){
     int i;
     
     for (i=0; i < n; i++) {
-        printf("%lf, ", eigens[i]->eigenvalue);
+        printf("%f, ", eigens[i]->eigenvalue);
     }
     for (i=0; i < n; i++) {
-        printMatrix(1, N, eigens[i]->eigenvector);
+        printArray(N, eigens[i]->eigenvector);
     }
 }
 
@@ -139,7 +140,12 @@ void printMatrix(int rows, int cols, double** matrix) {
 void printArray(int len, double* matrix) {
     int i; 
     for (i = 0; i < len; i++) {
+         if ( i == len - 1) {
+                printf("%.4f", matrix[i]);
+        }
+        else{
         printf("%.4f,", matrix[i]);
+        }
     }
     printf("\n\n");
 }
@@ -157,12 +163,20 @@ double** allocateMatrix(int rows, int cols){
     return matrix;
 }
 
+Eigen* allocateEigen(){
+    Eigen* eigen;
+
+    eigen = (Eigen*)malloc(sizeof(Eigen));
+    eigen->eigenvector = (double*)malloc(N * sizeof(double));
+    return eigen;
+}
+
 /** -------------------------------- FREE -------------------------------------------------- **/
 
-void freeEigensArray (Eigen* freeEigensArray, int N) {
+void freeEigensArray (Eigen** freeEigensArray, int N) {
     int i;
     for (i=0 ; i<N ; i++) {
-        free(freeEigensArray[i].eigenvector);
+        free(freeEigensArray[i]-> eigenvector);
     }
     free(freeEigensArray);
 }
@@ -229,20 +243,29 @@ double calcEuclideanNorm(double* vector1, double* vector2){
     /** TODO :
      * given two points, this function returns the euclidean norm 
      */  
-    int i, euclidianNorm;
+    int i;
+    double euclidianNorm;
     euclidianNorm = 0;
     for(i=0; i< DIM; i++){
         euclidianNorm += pow((vector1[i]-vector2[i]),2);
     }
+    printf("euclidian norm:");
+    printf("%f", euclidianNorm);
+    printf("\n");
+    printf("square of euclidian norm:");
+    printf("%f", pow(euclidianNorm, 0.5));
+    printf("\n");
     return pow(euclidianNorm, 0.5);
 }
 
-double eigenComperator(Eigen* eigen1, Eigen* eigen2){
+int eigenComperator(const void *eigen1, const void *eigen2){
     /**
      * This is a compare function which will take 2 elements from the eigen array 
      * and return eigen1->eigenvalue - eigen2->eigenvalue
      */
-    if(eigen1->eigenvalue < eigen2->eigenvalue) {
+    Eigen *eigenOne = (Eigen *)eigen1;
+    Eigen *eigenTwo = (Eigen *)eigen2;
+    if(eigenOne->eigenvalue < eigenTwo->eigenvalue) {
         return 0;
     }
     return 1;
@@ -280,10 +303,10 @@ bool is_diagonal(double** A, double** A_tag){
 
 double* obtainCT(double A_ii, double A_jj, double A_ij) {
     /** given a pivot value, return c and t as explained in the project */
-    double theta, c, t, s, *res;
+    double theta, c, t,*res;
     int sign;
 
-    printf("A_ij = %lf, A_ii = %lf, A_jj = %lf", A_ij, A_ii, A_jj);
+    printf("A_ij = %f, A_ii = %f, A_jj = %f", A_ij, A_ii, A_jj);
     theta = (A_jj - A_ii) / A_ij;
     if (theta >= 0) {
         sign = 1;
@@ -291,9 +314,10 @@ double* obtainCT(double A_ii, double A_jj, double A_ij) {
     else {
         sign = -1;
     }
-    printf("theta = %lf, sign = %d", theta, sign);
-    t = sign / (abs(theta)+sqrt(pow(theta,2) + 1));
+    printf("theta = %f, sign = %d", theta, sign);
+    t = sign / (fabs(theta)+sqrt(pow(theta,2) + 1));
     c = 1 / sqrt(pow(t,2) + 1);
+    res = (double*)calloc(2,sizeof(double));
     res[0] = c;
     res[1] = t;
     return res;
@@ -315,7 +339,7 @@ void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, do
     }
 }
 
-calcV(double** V, double c, double s, int pivot_i, int pivot_j) {
+void calcV(double** V, double c, double s, int pivot_i, int pivot_j) {
     V[pivot_i][pivot_i] = V[pivot_i][pivot_i] * c;
     V[pivot_j][pivot_j] = V[pivot_j][pivot_j] * c;
     V[pivot_i][pivot_j] = V[pivot_i][pivot_j] * s;
@@ -404,7 +428,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     } while (!is_diagonal(A,A_tag));
 
     transposeSquareMatrix(V, N);
-    for (int i = 0; i < N ; i++) {
+    for (i = 0; i < N ; i++) {
        eigensArray[i] = allocateEigen();
        eigensArray[i]->eigenvalue = A_tag[i][i];
        memcpy(eigensArray[i]->eigenvector, V[i], N);
@@ -420,8 +444,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     }
 }
 
-
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray){
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
     /** TODO: Perform full spectral kmeans as described in 1.
      * The function should print appropriate output
      */
@@ -438,7 +461,7 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen* eigensArray){
 
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
     if (K == 0) {
-        runEigengapHeuristic;
+       /* runEigengapHeuristic;*/
     }
 }
 
@@ -506,7 +529,7 @@ int main(int argc, char* argv[]) {
     /* Create the graph */
     vertices = allocateMatrix(N, DIM);
     weighted_mat = allocateMatrix(N, N);
-    diagonal_degree_array = (double*)malloc((N) * sizeof(double));
+    diagonal_degree_array = (double*)calloc(N, sizeof(double));
     graph = (Graph*) malloc(sizeof (Graph));
     constructGraph(file, vertices, weighted_mat, diagonal_degree_array, graph);
 
