@@ -40,16 +40,16 @@ typedef struct Eigen {
 /** ---------------------------------- GRAPH FUNCTIONS ---------------------------------------- **/
 
 void fillWeightedMat(double** vertices, double** weighted_mat,int N){
-    /** TODO : 
-     * given a list of vectors, this fuction should return a matrix of weights 
+    /* given a list of vectors, this fuction should return a matrix of weights 
      * for each pair of vectors
      * NOTE : remember this is a symetric matrix, we only need to compute for i<j
      * and put the result in 2 slots
      */
     int i,j;
     double euclidianNorm,power;
+
     for(i=0 ; i<N ; i++){
-        weighted_mat[i][i] = 0;
+        weighted_mat[i][i] = 0.0;
         for(j=i+1; j<N ; j++){
             euclidianNorm = calcEuclideanNorm(vertices[i],vertices[j]);
             power = -euclidianNorm/2;
@@ -61,7 +61,7 @@ void fillWeightedMat(double** vertices, double** weighted_mat,int N){
 }
     
 void fillDiagonalDegreeArray(double** weighted_mat, double* diagonal_degree_array, int N){
-     /** TODO : 
+     /* 
      * given a list of vectors, this fuction should return the Diagonal Degree Matrix ^ -0.5 
      */
     int i,j;
@@ -95,10 +95,6 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
     DIM = j;
     N = i;
 
-    /** TODO:
-     * create fillWeightedMat(vertices, weighted_mat, N, DIM)
-     * create fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N)
-     */
     fillWeightedMat(vertices, weighted_mat, N);
     fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N);
 
@@ -157,8 +153,10 @@ double** allocateMatrix(int rows, int cols){
     double** matrix;
     
     matrix = (double**)calloc(rows, sizeof(double*));
+    assert(matrix && ERROR_OCCURED);
     for (i=0 ; i< rows; i++){
         matrix[i] = (double*)calloc(cols, sizeof(double));
+        assert(matrix[i] && ERROR_OCCURED);
     }
     return matrix;
 }
@@ -167,7 +165,9 @@ Eigen* allocateEigen(){
     Eigen* eigen;
 
     eigen = (Eigen*)malloc(sizeof(Eigen));
+    assert(eigen && ERROR_OCCURED);
     eigen->eigenvector = (double*)malloc(N * sizeof(double));
+    assert(eigen ->eigenvector && ERROR_OCCURED);
     return eigen;
 }
 
@@ -240,12 +240,13 @@ void transposeSquareMatrix(double** matrix, int N) {
 }
 
 double calcEuclideanNorm(double* vector1, double* vector2){
-    /** TODO :
+    /*
      * given two points, this function returns the euclidean norm 
      */  
     int i;
     double euclidianNorm;
     euclidianNorm = 0;
+
     for(i=0; i< DIM; i++){
         euclidianNorm += pow((vector1[i]-vector2[i]),2);
     }
@@ -358,13 +359,44 @@ void calcU(Eigen** eigensArray, double** U) {
             U[j][i] = eigensArray[i]->eigenvector[j];
         }
     }
-}   
+} 
+
+void calcT(double **U, double **T){
+    int i,j;
+    double rowLength;
+
+    for(i=0 ; i<N ; i++){
+        rowLength = 0;
+        for(j=0 ; j<2*K ; j++){
+            if(j<K){
+                rowLength = rowLength + pow(U[i][j],2);
+            }
+            else if(j=K){
+                rowLength = pow(rowLength,0.5);
+                if(rowLength != 0){
+                    T[i][2*K-j] = U[i][2*K-j] / rowLength;
+                }
+                else{
+                    T[i][2*K-j] = 0;
+                }
+            }
+            else{
+               if(rowLength != 0){
+                    T[i][2*K-j] = U[i][2*K-j] / rowLength;
+                }
+                else{
+                    T[i][2*K-j] = 0;
+                } 
+            }
+        }
+    }
+}
 
 int runEigengapHeuristic(Eigen** eigensArray) {
     int i, maxI;
     double gap, maxGap;
 
-    maxI = -1
+    maxI = -1;
     maxGap = -1.0;
 
     for (i=1; i < N/2 ; i++) {
@@ -375,7 +407,7 @@ int runEigengapHeuristic(Eigen** eigensArray) {
         }
     }
 
-    return maxI
+    return maxI;
 }
 
 /** ---------------------------------- FLOWS ---------------------------------------- **/
@@ -490,7 +522,7 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
      * 6. run_kmeanspp(T)
      * 7. Assign points to relevant clusters as described in Algorithm1 of project description
      */
-    double** U;
+    double** U, **T;
 
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
     if (K == 0) {
@@ -498,22 +530,25 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
     }
     U = allocateMatrix(N, K);
     calcU(eigensArray, U);
+    T = allocateMatrix(N,K);
+    calcT(U,T);
+
 }
 
 /** MAIN **/
 int main(int argc, char* argv[]) {
-    /*
+    
     double** weighted_mat, **vertices, **laplacian_mat, *diagonal_degree_array;
     char* file_name, *goal;
     FILE* file;
     Graph* graph;
     Eigen* eigensArray;
-    */
+    /*
    double** weighted_mat, **vertices, *diagonal_degree_array;
     char* file_name, *goal;
     FILE* file;
     Graph* graph;
-
+    */
     printf("In Main");
     printf("\n");
     assert((argc == 4) && INVALID_INPUT); 
@@ -565,7 +600,9 @@ int main(int argc, char* argv[]) {
     vertices = allocateMatrix(N, DIM);
     weighted_mat = allocateMatrix(N, N);
     diagonal_degree_array = (double*)calloc(N, sizeof(double));
+    assert(diagonal_degree_array && ERROR_OCCURED);
     graph = (Graph*) malloc(sizeof (Graph));
+    assert(graph && ERROR_OCCURED);
     constructGraph(file, vertices, weighted_mat, diagonal_degree_array, graph);
 
     printf("vertices:");
@@ -577,10 +614,11 @@ int main(int argc, char* argv[]) {
     printf("diagonal array:");
     printf("\n");
     printArray(N, diagonal_degree_array);
-/*
+
     if (!strcmp(goal, "spk")) {
         laplacian_mat = allocateMatrix(N, N);
         eigensArray = (Eigen*)malloc(N * N * sizeof(Eigen));
+        assert(eigensArray && ERROR_OCCURED);
         runSpkFlow(graph, laplacian_mat, eigensArray);
         freeMatrix(laplacian_mat, N);
         freeEigensArray(eigensArray, N);
@@ -599,6 +637,7 @@ int main(int argc, char* argv[]) {
     else if (!strcmp(goal, "jacobi")) {
         laplacian_mat = allocateMatrix(N, N);
         eigensArray = (Eigen**)malloc(N * sizeof(Eigen*));
+        assert(eigensArray && ERROR_OCCURED);
         runJacobiFlow(graph, laplacian_mat, eigensArray, TRUE);
         freeMatrix(laplacian_mat, N);
         freeEigensArray(eigensArray, N);
@@ -606,14 +645,14 @@ int main(int argc, char* argv[]) {
     else {
         printf("%s", INVALID_INPUT);
         exit(1);
-    }*/
+    }
     
     fclose(file);
-    /*
+    
     free(diagonal_degree_array);
     freeMatrix(weighted_mat, N);
     freeMatrix(vertices, N);
-    */
+
    return 1; 
 }
 

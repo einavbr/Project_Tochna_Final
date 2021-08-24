@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import pandas as pd
 import math
+import spkmeansmodule as spkmeans
 
 INVALID_INPUT = 'Invalid Input!'
 ERROR_OCCURED = 'An Error Has Occured'
