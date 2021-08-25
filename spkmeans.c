@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
+#include "spkmeans.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -17,6 +18,7 @@ int N, K, DIM;
 double calcEuclideanNorm(double* vector1, double* vector2);
 void printMatrix(int rows, int cols, double** matrix);
 void printArray(int len, double* matrix);
+int printTest(int num);
 
 /* ------------------------------ GRAPH IMPLEMENTATION ---------------------------------------------------- */
 
@@ -371,7 +373,7 @@ void calcT(double **U, double **T){
             if(j<K){
                 rowLength = rowLength + pow(U[i][j],2);
             }
-            else if(j=K){
+            else if(j==K){
                 rowLength = pow(rowLength,0.5);
                 if(rowLength != 0){
                     T[i][2*K-j] = U[i][2*K-j] / rowLength;
@@ -526,7 +528,7 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
 
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
     if (K == 0) {
-        K = runEigengapHeuristic;
+        K = runEigengapHeuristic(eigensArray);
     }
     U = allocateMatrix(N, K);
     calcU(eigensArray, U);
@@ -537,18 +539,18 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
 
 /** MAIN **/
 int main(int argc, char* argv[]) {
-    
+    /*
     double** weighted_mat, **vertices, **laplacian_mat, *diagonal_degree_array;
     char* file_name, *goal;
     FILE* file;
     Graph* graph;
     Eigen* eigensArray;
-    /*
+    */
    double** weighted_mat, **vertices, *diagonal_degree_array;
     char* file_name, *goal;
     FILE* file;
     Graph* graph;
-    */
+    
     printf("In Main");
     printf("\n");
     assert((argc == 4) && INVALID_INPUT); 
@@ -614,7 +616,7 @@ int main(int argc, char* argv[]) {
     printf("diagonal array:");
     printf("\n");
     printArray(N, diagonal_degree_array);
-
+/*
     if (!strcmp(goal, "spk")) {
         laplacian_mat = allocateMatrix(N, N);
         eigensArray = (Eigen*)malloc(N * N * sizeof(Eigen));
@@ -646,7 +648,7 @@ int main(int argc, char* argv[]) {
         printf("%s", INVALID_INPUT);
         exit(1);
     }
-    
+    */
     fclose(file);
     
     free(diagonal_degree_array);
@@ -654,6 +656,15 @@ int main(int argc, char* argv[]) {
     freeMatrix(vertices, N);
 
    return 1; 
+}
+
+int printTest(int num){
+    int res;
+
+    printf("Hello Keren, I'm in C\n");
+    res = num +8;
+
+    return res;
 }
 
 

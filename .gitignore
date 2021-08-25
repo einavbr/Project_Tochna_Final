@@ -4,3 +4,5 @@ env/
 __pycache__/
 Makefile
 spkmeans.exe
+spkmeansmodule.cp37-win_amd64.pyd
+build/
