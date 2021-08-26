@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include "spkmeans.h"
+#include "kmeans.c"
 
 #define TRUE 1
 #define FALSE 0
@@ -73,6 +74,7 @@ void fillDiagonalDegreeArray(double** weighted_mat, double* diagonal_degree_arra
             printf("w_ij: %f", weighted_mat[i][j]);
             diagonal_degree_array[i] = diagonal_degree_array[i] + weighted_mat[i][j];
         }
+        diagonal_degree_array[i] = pow(diagonal_degree_array[i],-0.5);
     }
 }
   
@@ -422,7 +424,7 @@ void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
      */
     int i, j;
     double mechane, mone;
-
+    printf("in runLnormFlow\n");
     for (i=0; i < N; i++){
         for (j=i; j < N; j++){
             if(i == j){
@@ -434,6 +436,8 @@ void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
             laplacian_mat[j][i] = 1 - (mechane / mone);
         }
     }
+    printf("lap mat from runLnormFlow is:");
+    printMatrix(N,N,laplacian_mat);
     if (print_bool){
         printMatrix(N, N, laplacian_mat);
     }
@@ -454,9 +458,10 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     double pivot, c, t, s;
     double* c_t;
     double** A_tag, **V;
-
+    printf("in runJacobiFlow\n");
     /* first A mat is the laplacian */
     runLnormFlow(graph, A, FALSE);
+    printf("back in runJacobiFlow\n");
     A_tag = allocateMatrix(N, N);
     V = allocateMatrix(N, N);
     for (i=0 ; i<N ; i++) {
@@ -508,9 +513,10 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     if (print_bool){
         printEigens(eigensArray, N);
     }
+    printf("Jacobi END");
 }
 
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray){
     /** TODO: Perform full spectral kmeans as described in 1.
      * The function should print appropriate output
      */
@@ -525,8 +531,14 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
      * 7. Assign points to relevant clusters as described in Algorithm1 of project description
      */
     double** U, **T;
-
+    printf("in runSpkFlow\n");
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
+    printf("back in spkFlow\n");
+    printf("laplacian:\n");
+    printMatrix(N,N,laplacian_mat);
+    printf("eigenArray:\n");
+    printEigens(eigensArray,N);
+
     if (K == 0) {
         K = runEigengapHeuristic(eigensArray);
     }
@@ -534,23 +546,25 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray){
     calcU(eigensArray, U);
     T = allocateMatrix(N,K);
     calcT(U,T);
-
+    kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
+    printMatrix(K,DIM,centroids_mat);
 }
 
 /** MAIN **/
 int main(int argc, char* argv[]) {
-    /*
-    double** weighted_mat, **vertices, **laplacian_mat, *diagonal_degree_array;
+    
+    double** weighted_mat, **vertices, **laplacian_mat, *diagonal_degree_array, **centroids_mat;
+    int *whichClusterArray;
     char* file_name, *goal;
     FILE* file;
     Graph* graph;
-    Eigen* eigensArray;
-    */
+    Eigen** eigensArray;
+    /*
    double** weighted_mat, **vertices, *diagonal_degree_array;
     char* file_name, *goal;
     FILE* file;
     Graph* graph;
-    
+    */
     printf("In Main");
     printf("\n");
     assert((argc == 4) && INVALID_INPUT); 
@@ -616,13 +630,19 @@ int main(int argc, char* argv[]) {
     printf("diagonal array:");
     printf("\n");
     printArray(N, diagonal_degree_array);
-/*
+
     if (!strcmp(goal, "spk")) {
+        printf("in spk flow\n");
         laplacian_mat = allocateMatrix(N, N);
-        eigensArray = (Eigen*)malloc(N * N * sizeof(Eigen));
+        centroids_mat = allocateMatrix(K,DIM);
+        whichClusterArray = (int*)calloc(N,sizeof(int));
+        assert(whichClusterArray && ERROR_OCCURED);
+        eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
         assert(eigensArray && ERROR_OCCURED);
-        runSpkFlow(graph, laplacian_mat, eigensArray);
+        runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray);
         freeMatrix(laplacian_mat, N);
+        freeMatrix(centroids_mat,K);
+        free(whichClusterArray);
         freeEigensArray(eigensArray, N);
     }
     else if (!strcmp(goal, "wam")) {
@@ -648,7 +668,7 @@ int main(int argc, char* argv[]) {
         printf("%s", INVALID_INPUT);
         exit(1);
     }
-    */
+    
     fclose(file);
     
     free(diagonal_degree_array);

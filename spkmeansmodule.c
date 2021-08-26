@@ -1,6 +1,9 @@
 #include "spkmeans.h"
 #include <Python.h>
 
+#define INVALID_INPUT "Invalid Input!"
+#define ERROR_OCCURED "An Error Has Occured"
+
 /** TODO:  
  * PyObject - for each function\s we'll be calling
  * PyMethodDef - 
@@ -12,7 +15,23 @@
  * spkmeans.c does calculations and returns to python before step 6 -> Pyton calls kmeans++ (hw2) also through this module ->
  * return to spkmeans.c for step 7 and finish. 
  */
+static PyObject* python_run_wam_flow(PyObject * self, PyObject * args){
+    char* k, *file_name;
+    FILE* file;
+    int N,DIM;
 
+    if(!PyArg_ParseTuple(args, "s", &k, &file_name)){
+        return NULL;
+    }
+    file = fopen(file_name, "r");
+    N = howManyLines(file);
+    DIM = pointSize(file);
+
+    if (k >= N){
+        printf(INVALID_INPUT);
+        return NULL;
+    }
+}
 static PyObject* printTest_wrapper(PyObject * self, PyObject * args){
     int input;
     int result;
