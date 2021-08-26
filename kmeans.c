@@ -3,17 +3,12 @@
 #include <string.h>
 #include <assert.h>
 
-void printMatrix(int rows, int cols, double** matrix);
-void printMatrixint(int rows, int cols, int* matrix);
-int pointSize(FILE* file);
-int howManyLines(FILE* file);
 void init(int K, int DIM, double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster);
 int findClosestCluster(double* point, double** centroidArray, int K, int sizeOfPoint);
 void changeCluster(int i, int newCluster, int* whichClusterArray);
 void calcNewCentroids(double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster, int N, int sizeOfPoint);
 void makeCendroidsAndAmountZero(double** centroidsArray,int* amount, int K, int pointSize);
 void free_double_pointer(double **array, int arrayLen);
-
 
 void init(int K, int DIM, double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster) {
     
