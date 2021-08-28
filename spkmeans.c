@@ -122,11 +122,12 @@ void printEigens(Eigen** eigens, int n){
 }
 
 void printMatrix(int rows, int cols, double** matrix) {
+    /** TODO: fix -0.0000 rounding**/
     int i, j; 
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             if (j == cols - 1) {
-                printf("%.4f", matrix[i][j]);
+                printf("%.4f", matrix[i][j]); 
             }
             else {
                 printf("%.4f,", matrix[i][j]);
@@ -421,20 +422,20 @@ void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
      * fill the provided Laplacian matrix 
      */
     int i, j;
-    double mechane, mone;
+    double degrees, weight, toSub, toPut;
     printf("in runLnormFlow\n");
     for (i=0; i < N; i++){
-        for (j=i; j < N; j++){
+        for (j=0; j < N; j++){
             if(i == j){
                 laplacian_mat[i][j] = 1.0;
             }
-            mechane = graph->diagonal_degree_array[i] * graph->diagonal_degree_array[j];
-            mone = graph->weighted_mat[i][j];
-            laplacian_mat[i][j] = 1 - (mechane / mone);
-            laplacian_mat[j][i] = 1 - (mechane / mone);
+            degrees = graph->diagonal_degree_array[i] * graph->diagonal_degree_array[j];
+            weight = graph->weighted_mat[i][j];
+            toSub = weight* degrees;
+            laplacian_mat[i][j] = laplacian_mat[i][j] - toSub;
         }
     }
-    printf("lap mat from runLnormFlow is:");
+    printf("lap mat from runLnormFlow is:\n");
     printMatrix(N,N,laplacian_mat);
     if (print_bool){
         printMatrix(N, N, laplacian_mat);
@@ -452,7 +453,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
      * and the eigensArray should be ORDERED with all eigenvalues and eigenvectors. 
      * Use sortEigens()
      */
-    int i, j, pivot_i, pivot_j;
+    int i, j, pivot_i, pivot_j, iter_num;
     double pivot, c, t, s;
     double* c_t;
     double** A_tag, **V;
@@ -466,8 +467,11 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     for (i=0 ; i<N ; i++) {
         V[i][i] = 1;
     }
-
+    iter_num = 0;
     do {
+        if(iter_num == 100){
+            break;
+        }
         /* calc pivot */
         pivot = 0;
         pivot_i = -1;
@@ -493,6 +497,8 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
         calcATag(A, A_tag, pivot_i, pivot_j,c,s);
 
         calcV(V, c, s, pivot_i, pivot_j);
+
+        iter_num = iter_num +1;
         
     } while (!is_diagonal(A,A_tag));
     printf("stopped calculating pivot");
