@@ -1,3 +1,3 @@
 import spkmeansmodule as spkmeans
 
-print(spkmeans.printTest(3))
+spkmeans.pythonRunWamFlow('k', 'test_inputs/input_1.txt')

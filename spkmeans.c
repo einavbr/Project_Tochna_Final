@@ -21,25 +21,6 @@ void printMatrix(int rows, int cols, double** matrix);
 void printArray(int len, double* matrix);
 int printTest(int num);
 
-/* ------------------------------ GRAPH IMPLEMENTATION ---------------------------------------------------- */
-
-typedef struct Graph {
-    /** A graph contains:
-     * vertices - A list of the vertices in the graph
-     * weighted_mat - Weighted Adjacency Matrix (represented as a sparse matrix, array implementation), weight = 0 means no edge
-     * diagonal_degree_array - The values on the diagonal of the Diagonal Degree Matrix ^ -0.5 
-     **/
-    double** vertices;
-    double** weighted_mat;
-    double* diagonal_degree_array;
-} Graph;
-
-typedef struct Eigen {
-    /* An Eigen is a "tuple" of an eigenvalue and it's corresponding eigenvector */
-    double eigenvalue;
-    double* eigenvector;
-} Eigen;
-
 /** ---------------------------------- GRAPH FUNCTIONS ---------------------------------------- **/
 
 void fillWeightedMat(double** vertices, double** weighted_mat,int N){
@@ -98,6 +79,7 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
     }
     DIM = j;
     N = i;
+    graph->size = i;
 
     fillWeightedMat(vertices, weighted_mat, N);
     fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N);
@@ -194,6 +176,12 @@ void freeMatrix(double **matrix, int rowsLen){
     free(matrix);
 }
 
+void freeGraph(Graph* graph){
+    free(graph->diagonal_degree_array);
+    freeMatrix(graph->weighted_mat, N);
+    freeMatrix(graph->vertices, N);
+    free(graph);
+}
 /** ---------------------------------- CALCULATIONS ---------------------------------------- **/
 
 
@@ -295,7 +283,7 @@ double calcOff(double** mat) {
     return (sqrt(sumTot) - sumDiag);
 }
 
-bool is_diagonal(double** A, double** A_tag){
+int is_diagonal(double** A, double** A_tag){
     /** TODO: calculate the convergence.
      * return True if the result is smaller than epsilon = 0.001
      */
@@ -413,6 +401,59 @@ int runEigengapHeuristic(Eigen** eigensArray) {
     return maxI;
 }
 
+/** ----------------------------- PYTHON HELPERS ---------------------------------------- **/
+
+Graph* pythonGraphInit(char* k, char* file_name) {
+    double** weighted_mat, **vertices, *diagonal_degree_array;
+    FILE* file;
+    Graph* graph;
+
+    printf("In pythonGraphInit");
+    printf("\n");
+
+    K = atoi(k);
+    printf("K is:%d",K);
+    printf("\n");
+    if ( K < 0) {
+        printf("%s", INVALID_INPUT);
+        exit(1);
+    } 
+    /* NOTE : if k == 0 - use heuristic */
+
+    printf("file_name is:%s",file_name);
+    printf("\n");
+    if (!file_name) {
+        printf("%s", ERROR_OCCURED);
+        printf("entered filename is not defined");
+        printf("\n");
+        exit(1);
+    }
+    
+    file = fopen(file_name, "r");
+    N = howManyLines(file);
+    DIM = pointSize(file);
+
+    printf("N is:%d",N);
+    printf("\n");
+    printf("DIM is:%d",DIM);
+    printf("\n");
+
+    if (K >= N){
+        printf("%s", INVALID_INPUT);
+        exit(1);
+    }
+
+    /* Create the graph */
+    vertices = allocateMatrix(N, DIM);
+    weighted_mat = allocateMatrix(N, N);
+    diagonal_degree_array = (double*)calloc(N, sizeof(double));
+    assert(diagonal_degree_array && ERROR_OCCURED);
+    graph = (Graph*) malloc(sizeof (Graph));
+    assert(graph && ERROR_OCCURED);
+    constructGraph(file, vertices, weighted_mat, diagonal_degree_array, graph);
+    return graph;
+}
+
 /** ---------------------------------- FLOWS ---------------------------------------- **/
 
 void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
@@ -422,7 +463,7 @@ void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
      * fill the provided Laplacian matrix 
      */
     int i, j;
-    double degrees, weight, toSub, toPut;
+    double degrees, weight, toSub;
     printf("in runLnormFlow\n");
     for (i=0; i < N; i++){
         for (j=0; j < N; j++){
@@ -520,7 +561,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     printf("Jacobi END");
 }
 
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray){
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray, int print_bool){
     /** TODO: Perform full spectral kmeans as described in 1.
      * The function should print appropriate output
      */
@@ -551,7 +592,9 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
     T = allocateMatrix(N,K);
     calcT(U,T);
     kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
-    printMatrix(K,DIM,centroids_mat);
+    if (print_bool){
+        printMatrix(K,DIM,centroids_mat);
+    }
 }
 
 /** MAIN **/
@@ -587,7 +630,7 @@ int main(int argc, char* argv[]) {
     printf("\n");
     if (!file_name) {
         printf("%s", ERROR_OCCURED);
-        printf("entered filename is not defiened");
+        printf("entered filename is not defined");
         printf("\n");
         exit(1);
     }
@@ -621,7 +664,7 @@ int main(int argc, char* argv[]) {
     weighted_mat = allocateMatrix(N, N);
     diagonal_degree_array = (double*)calloc(N, sizeof(double));
     assert(diagonal_degree_array && ERROR_OCCURED);
-    graph = (Graph*) malloc(sizeof (Graph));
+    graph = (Graph*)malloc(sizeof (Graph));
     assert(graph && ERROR_OCCURED);
     constructGraph(file, vertices, weighted_mat, diagonal_degree_array, graph);
 
@@ -643,7 +686,7 @@ int main(int argc, char* argv[]) {
         assert(whichClusterArray && ERROR_OCCURED);
         eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
         assert(eigensArray && ERROR_OCCURED);
-        runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray);
+        runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray, TRUE);
         freeMatrix(laplacian_mat, N);
         freeMatrix(centroids_mat,K);
         free(whichClusterArray);
@@ -675,9 +718,7 @@ int main(int argc, char* argv[]) {
     
     fclose(file);
     
-    free(diagonal_degree_array);
-    freeMatrix(weighted_mat, N);
-    freeMatrix(vertices, N);
+    freeGraph(graph);
 
    return 1; 
 }

@@ -1,5 +1,5 @@
 #include "spkmeans.h"
-#include <Python.h>
+#include <Python.h> 
 
 #define INVALID_INPUT "Invalid Input!"
 #define ERROR_OCCURED "An Error Has Occured"
@@ -15,37 +15,46 @@
  * spkmeans.c does calculations and returns to python before step 6 -> Pyton calls kmeans++ (hw2) also through this module ->
  * return to spkmeans.c for step 7 and finish. 
  */
-static PyObject* python_run_wam_flow(PyObject * self, PyObject * args){
+static PyObject* pythonRunWamFlow(PyObject * self, PyObject * args){
+    int i, j;
     char* k, *file_name;
-    FILE* file;
-    int N,DIM;
+    Graph* graph;
+    PyObject *PyWeightsMat, *PyWeightsRow;
 
-    if(!PyArg_ParseTuple(args, "s", &k, &file_name)){
+    if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
         return NULL;
     }
-    file = fopen(file_name, "r");
-    N = howManyLines(file);
-    DIM = pointSize(file);
-
-    if (k >= N){
-        printf(INVALID_INPUT);
+    graph = pythonGraphInit(k, file_name);
+    if (graph == NULL){
         return NULL;
     }
+    PyWeightsMat = PyList_New(graph->size);
+    if (!PyWeightsMat){
+        return NULL;
+    }
+    for (i = 0; i < graph->size; i++){
+        PyWeightsRow = PyList_New(graph->size);
+        for (j = 0; j < graph->size; j++){
+            PyList_SET_ITEM(PyWeightsRow, j, Py_BuildValue("d", graph->weighted_mat[i][j]));
+        }
+        PyList_SET_ITEM(PyWeightsMat, i, Py_BuildValue("O", PyWeightsRow));
+    }
+
+    freeGraph(graph);
+
+    return PyWeightsMat;
 }
-static PyObject* printTest_wrapper(PyObject * self, PyObject * args){
-    int input;
-    int result;
+static PyObject* pythonRunWamFlow_wrapper(PyObject * self, PyObject * args){
+    char* file_name, *k;
     PyObject * ret;
 
     //parse arguments
-    if (!PyArg_ParseTuple(args, "i", &input)) {
+    if (!PyArg_ParseTuple(args, "ss", &k, &file_name)) {
     return NULL;
   }
-  printf("Hello Keren, inside module\n");
+  printf("Hello Einav, inside module\n");
   // run the actual function
-  result = printTest(input);
-  // build the resulting string into a Python object.
-  ret = PyLong_FromLong(result);
+  ret = pythonRunWamFlow(k, file_name);
 
   return ret;
 }
@@ -53,10 +62,10 @@ static PyObject* printTest_wrapper(PyObject * self, PyObject * args){
 // Method definition object for this extension
 static PyMethodDef spkmeansMethods[] = { 
     {  
-        "printTest",
-        (PyCFunction) printTest_wrapper,
+        "pythonRunWamFlow",
+        (PyCFunction) pythonRunWamFlow_wrapper,
         METH_VARARGS,
-        PyDoc_STR("Testing module with simple function")
+        PyDoc_STR("Run WAM flow")
     },
     {NULL, NULL, 0, NULL}
 };
