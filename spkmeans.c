@@ -12,7 +12,7 @@
 #define INVALID_INPUT "Invalid Input!"
 #define ERROR_OCCURED "An Error Has Occured"
 #define MAX_ITER 100
-#define EPSILON 0.001
+#define EPSILON exp(-15)
 
 int N, K, DIM;
 
@@ -306,12 +306,11 @@ bool is_diagonal(double** A, double** A_tag){
     return (offA - offA_tag <= EPSILON);
 }
 
-double* obtainCT(double A_ii, double A_jj, double A_ij) {
+int obtainCT(double A_ii, double A_jj, double A_ij, double* c_t) {
     /** given a pivot value, return c and t as explained in the project */
-    double theta, c, t,*res;
+    double theta, c, t;
     int sign;
-
-    printf("A_ij = %f, A_ii = %f, A_jj = %f", A_ij, A_ii, A_jj);
+   /* printf("A_ij = %f, A_ii = %f, A_jj = %f", A_ij, A_ii, A_jj);*/
     theta = (A_jj - A_ii) / A_ij;
     if (theta >= 0) {
         sign = 1;
@@ -319,13 +318,12 @@ double* obtainCT(double A_ii, double A_jj, double A_ij) {
     else {
         sign = -1;
     }
-    printf("theta = %f, sign = %d", theta, sign);
+  /*printf("theta = %f, sign = %d", theta, sign);*/
     t = sign / (fabs(theta)+sqrt(pow(theta,2) + 1));
     c = 1 / sqrt(pow(t,2) + 1);
-    res = (double*)calloc(2,sizeof(double));
-    res[0] = c;
-    res[1] = t;
-    return res;
+    c_t[0] = c;
+    c_t[1] = t;
+    return 1;
 }
 
 void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, double s) {
@@ -464,6 +462,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     printf("back in runJacobiFlow\n");
     A_tag = allocateMatrix(N, N);
     V = allocateMatrix(N, N);
+    c_t = (double*)calloc(2,sizeof(double));
     for (i=0 ; i<N ; i++) {
         V[i][i] = 1;
     }
@@ -484,9 +483,8 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
                 }
             }
         }
-
         /* calc c,t,s */
-        c_t = obtainCT(A[pivot_i][pivot_i], A[pivot_j][pivot_j], pivot);
+        obtainCT(A[pivot_i][pivot_i], A[pivot_j][pivot_j], pivot,c_t);
         c = c_t[0];
         t = c_t[1];
         s = c * t;
@@ -497,7 +495,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
         calcV(V, c, s, pivot_i, pivot_j);
         
     } while (!is_diagonal(A,A_tag));
-
+    printf("stopped calculating pivot");
     transposeSquareMatrix(V, N);
     for (i = 0; i < N ; i++) {
        eigensArray[i] = allocateEigen();

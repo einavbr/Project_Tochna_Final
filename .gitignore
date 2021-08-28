@@ -6,3 +6,4 @@ Makefile
 spkmeans.exe
 spkmeansmodule.cp37-win_amd64.pyd
 build/
+test_inputs/test1.txt
