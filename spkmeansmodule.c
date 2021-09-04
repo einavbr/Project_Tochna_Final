@@ -44,6 +44,7 @@ static PyObject* pythonRunWamFlow(PyObject * self, PyObject * args){
 
     return PyWeightsMat;
 }
+/*
 static PyObject* pythonRunWamFlow_wrapper(PyObject * self, PyObject * args){
     char* file_name, *k;
     PyObject * ret;
@@ -58,12 +59,12 @@ static PyObject* pythonRunWamFlow_wrapper(PyObject * self, PyObject * args){
 
   return ret;
 }
-
+*/
 // Method definition object for this extension
 static PyMethodDef spkmeansMethods[] = { 
     {  
         "pythonRunWamFlow",
-        (PyCFunction) pythonRunWamFlow_wrapper,
+        (PyCFunction) pythonRunWamFlow,
         METH_VARARGS,
         PyDoc_STR("Run WAM flow")
     },
