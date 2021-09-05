@@ -1,6 +1,9 @@
 #ifndef SPKMEANS_H_   /* Include guard */
 #define SPKMEANS_H_
 
+#define TRUE 1
+#define FALSE 0
+
 /* ------------------------------ GRAPH DECLERATION ---------------------------------------------------- */
 
 typedef struct Graph {
@@ -13,6 +16,7 @@ typedef struct Graph {
     double** weighted_mat;
     double* diagonal_degree_array;
     int size;
+    int dim;
 } Graph;
 
 typedef struct Eigen {
@@ -24,5 +28,9 @@ typedef struct Eigen {
 int printTest(int num);
 Graph* pythonGraphInit(char* k, char* file_name);
 void freeGraph(Graph* graph);
+double** allocateMatrix(int rows, int cols);
+void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool);
+void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool);
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray, int kmeanspp_bool, int print_bool);
 
 #endif

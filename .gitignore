@@ -10,3 +10,4 @@ test_inputs/test1.txt
 dist/
 spkmeansmodule.egg-info/
 spkmeans
+spkmeansmodule.cpython-38-darwin.so

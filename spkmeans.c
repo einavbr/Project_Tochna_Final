@@ -7,8 +7,6 @@
 #include "spkmeans.h"
 #include "kmeans.c"
 
-#define TRUE 1
-#define FALSE 0
 #define INVALID_INPUT "Invalid Input!"
 #define ERROR_OCCURED "An Error Has Occured"
 #define MAX_ITER 100
@@ -30,16 +28,17 @@ void fillWeightedMat(double** vertices, double** weighted_mat,int N){
      * and put the result in 2 slots
      */
     int i,j;
-    double euclidianNorm,power;
+    double euclidianNorm, power;
 
     for(i=0 ; i<N ; i++){
-        weighted_mat[i][i] = 0.0;
+        /* weighted_mat[i][i] = 0.0; */
         for(j=i+1; j<N ; j++){
             euclidianNorm = calcEuclideanNorm(vertices[i],vertices[j]);
             power = -euclidianNorm/2;
             weighted_mat[i][j] = weighted_mat[j][i] = exp(power);
-            printf("weighted matrix in %d,%d is: %f",i,j,exp(power));
-            printf("\n");
+            /* printf("weighted matrix in %d,%d is: %f\n",i,j,exp(power));
+            printf("weighted_mat[i][j] is: %f",weighted_mat[i][j]);
+            printf("\n"); */
         }
     }
 }
@@ -51,8 +50,8 @@ void fillDiagonalDegreeArray(double** weighted_mat, double* diagonal_degree_arra
     int i,j;
     for(i=0; i<N; i++){
         for(j=0;j<N;j++){
-            printf("i,j: %d,%d\n", i,j); 
-            printf("w_ij: %f", weighted_mat[i][j]);
+            /* printf("i,j: %d,%d\n", i,j); 
+            printf("w_ij: %f", weighted_mat[i][j]); */
             diagonal_degree_array[i] = diagonal_degree_array[i] + weighted_mat[i][j];
         }
         diagonal_degree_array[i] = pow(diagonal_degree_array[i],-0.5);
@@ -80,13 +79,21 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
     DIM = j;
     N = i;
     graph->size = i;
+    graph->dim = j;
 
+    printf("filling weightedMat\n");
     fillWeightedMat(vertices, weighted_mat, N);
+    printf("finished filling weightedMat\n");
+    printf("filling DiagonalDegreeArray\n");
     fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N);
+    printf("finished filling DiagonalDegreeArray\n");
+    
 
     graph->vertices = vertices;
     graph->weighted_mat = weighted_mat;
     graph->diagonal_degree_array = diagonal_degree_array;
+    printMatrix(N, N, graph->weighted_mat);
+    printArray(N, graph->diagonal_degree_array);
     free(line);
 }
 
@@ -106,17 +113,22 @@ void printEigens(Eigen** eigens, int n){
 void printMatrix(int rows, int cols, double** matrix) {
     /** TODO: fix -0.0000 rounding**/
     int i, j; 
+    printf("in printMatrix\n");
+    if (!matrix){
+        printf("matrix is NULL\n");
+    }
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             if (j == cols - 1) {
-                printf("%.4f", matrix[i][j]); 
+                printf("%f", matrix[i][j]); 
             }
             else {
-                printf("%.4f,", matrix[i][j]);
+                printf("%f,", matrix[i][j]); 
             }
         }
         printf("\n");
     }
+
     printf("\n\n");
 }
 
@@ -135,17 +147,42 @@ void printArray(int len, double* matrix) {
 
 /** ---------------------------------- ALLOCATIONS ---------------------------------------- **/
 
-double** allocateMatrix(int rows, int cols){
+/* void allocateMatrix(int row, int col, double **matrix){
     int i;
-    double** matrix;
-    
-    matrix = (double**)calloc(rows, sizeof(double*));
-    assert(matrix && ERROR_OCCURED);
-    for (i=0 ; i< rows; i++){
-        matrix[i] = (double*)calloc(cols, sizeof(double));
-        assert(matrix[i] && ERROR_OCCURED);
+    printf("in allocateMatrix");
+    i = 0;
+    matrix = (double **)malloc(sizeof(double *) * row);
+    for(i = 0; i < col; i++){
+        matrix[i] = (double *)malloc(sizeof(double) * col);
     }
-    return matrix;
+} */
+
+double** allocateMatrix(int rows, int cols)
+{
+    double ** m;
+    int r;
+
+    printf("in allocateMatrix\n");
+    /* Allocate array of row pointers */
+    m = (double**)calloc(rows, sizeof(double*));
+    if (!m) return NULL;
+    /* printf("finished allocating array of row pointers\n"); */
+
+    /* Allocate block for data */
+    m[0] = (double*)calloc(rows * cols, sizeof(double));
+    if (!m[0]) {
+        free(m);
+        return NULL;
+    }
+    /* printf("finished allocating block for data\n"); */
+
+    /* Assign row pointers */
+    for(r = 1; r < rows; r++) {
+        m[r] = m[r-1]+cols;
+    }
+    /* printf("finished Assigning row pointers\n"); */
+
+    return m; 
 }
 
 Eigen* allocateEigen(){
@@ -168,18 +205,15 @@ void freeEigensArray (Eigen** freeEigensArray, int N) {
     free(freeEigensArray);
 }
 
-void freeMatrix(double **matrix, int rowsLen){
-    int i;
-    for (i=0; i < rowsLen; i++){
-        free(matrix[i]);
-    }
-    free(matrix);
+void freeMatrix(double **m){
+    if (m) free(m[0]);
+    free(m);
 }
 
 void freeGraph(Graph* graph){
     free(graph->diagonal_degree_array);
-    freeMatrix(graph->weighted_mat, N);
-    freeMatrix(graph->vertices, N);
+    freeMatrix(graph->weighted_mat);
+    freeMatrix(graph->vertices);
     free(graph);
 }
 /** ---------------------------------- CALCULATIONS ---------------------------------------- **/
@@ -213,9 +247,11 @@ int pointSize(FILE* file) {
 }
 
 void memcpy_matrix(double** src, double** dest, int rows, int cols) {
-    int i;
+    int i, j;
     for (i=0 ; i<rows; i++){
-        memcpy(dest[i], src[i], cols);
+        for (j=0; j<cols; j++){
+            dest[i][j] = src[i][j];
+        }
     }
 }
 
@@ -243,12 +279,12 @@ double calcEuclideanNorm(double* vector1, double* vector2){
     for(i=0; i< DIM; i++){
         euclidianNorm += pow((vector1[i]-vector2[i]),2);
     }
-    printf("euclidian norm:");
+    /* printf("euclidian norm:");
     printf("%f", euclidianNorm);
     printf("\n");
     printf("square of euclidian norm:");
     printf("%f", pow(euclidianNorm, 0.5));
-    printf("\n");
+    printf("\n"); */
     return pow(euclidianNorm, 0.5);
 }
 
@@ -291,7 +327,9 @@ int is_diagonal(double** A, double** A_tag){
 
     offA = calcOff(A);
     offA_tag = calcOff(A_tag);
-
+    printf("is_diagonal: offA - offA_tag is: %f\n", offA - offA_tag);
+    printf("is_diagonal: epsilon is %.10f\n", EPSILON);
+    printf("is_diagonal: return value is: %d\n", offA - offA_tag <= EPSILON);
     return (offA - offA_tag <= EPSILON);
 }
 
@@ -299,7 +337,8 @@ int obtainCT(double A_ii, double A_jj, double A_ij, double* c_t) {
     /** given a pivot value, return c and t as explained in the project */
     double theta, c, t;
     int sign;
-   /* printf("A_ij = %f, A_ii = %f, A_jj = %f", A_ij, A_ii, A_jj);*/
+
+    printf("obtainCT: A_ij = %f, A_ii = %f, A_jj = %f\n", A_ij, A_ii, A_jj);
     theta = (A_jj - A_ii) / A_ij;
     if (theta >= 0) {
         sign = 1;
@@ -307,7 +346,7 @@ int obtainCT(double A_ii, double A_jj, double A_ij, double* c_t) {
     else {
         sign = -1;
     }
-  /*printf("theta = %f, sign = %d", theta, sign);*/
+    printf("obtainCT: theta = %f, sign = %d\n", theta, sign);
     t = sign / (fabs(theta)+sqrt(pow(theta,2) + 1));
     c = 1 / sqrt(pow(t,2) + 1);
     c_t[0] = c;
@@ -318,7 +357,7 @@ int obtainCT(double A_ii, double A_jj, double A_ij, double* c_t) {
 void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, double s) {
     int r;
 
-    memcpy_matrix(A, A_tag, N, N);
+    /* memcpy_matrix(A, A_tag, N, N); */
     A_tag[pivot_i][pivot_i] = pow(c,2) * A[pivot_i][pivot_i] + pow(s,2) * A[pivot_j][pivot_j] - 2 * s * c * A[pivot_i][pivot_j];
     A_tag[pivot_j][pivot_j] = pow(c,2) * A[pivot_i][pivot_i] + pow(s,2) * A[pivot_j][pivot_j] + 2 * s * c * A[pivot_i][pivot_j];
     A_tag[pivot_i][pivot_j] = 0;
@@ -327,7 +366,9 @@ void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, do
             continue;
         }
         A_tag[r][pivot_i] = c * A[r][pivot_i] - s * A[r][pivot_j];
+        A_tag[pivot_i][r] = c * A[r][pivot_i] - s * A[r][pivot_j];
         A_tag[r][pivot_j] = c * A[r][pivot_j] + s * A[r][pivot_i];
+        A_tag[pivot_j][r] = c * A[r][pivot_j] + s * A[r][pivot_i];
     }
 }
 
@@ -408,6 +449,9 @@ Graph* pythonGraphInit(char* k, char* file_name) {
     FILE* file;
     Graph* graph;
 
+    weighted_mat = NULL;
+    vertices = NULL;
+
     printf("In pythonGraphInit");
     printf("\n");
 
@@ -444,7 +488,9 @@ Graph* pythonGraphInit(char* k, char* file_name) {
     }
 
     /* Create the graph */
+    /* allocateMatrix(N, DIM, vertices); */
     vertices = allocateMatrix(N, DIM);
+    /* allocateMatrix(N, N, weighted_mat); */
     weighted_mat = allocateMatrix(N, N);
     diagonal_degree_array = (double*)calloc(N, sizeof(double));
     assert(diagonal_degree_array && ERROR_OCCURED);
@@ -498,11 +544,15 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     double pivot, c, t, s;
     double* c_t;
     double** A_tag, **V;
-    printf("in runJacobiFlow\n");
+
     /* first A mat is the laplacian */
     runLnormFlow(graph, A, FALSE);
-    printf("back in runJacobiFlow\n");
+    /* allocateMatrix(N, N, A_tag); */
+    printf("runJacobiFlow: alloc A_tag\n");
     A_tag = allocateMatrix(N, N);
+    memcpy_matrix(A, A_tag, N, N);
+    /* allocateMatrix(N, N, V); */
+    printf("runJacobiFlow: alloc V\n");
     V = allocateMatrix(N, N);
     c_t = (double*)calloc(2,sizeof(double));
     for (i=0 ; i<N ; i++) {
@@ -513,14 +563,19 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
         if(iter_num == 100){
             break;
         }
+        memcpy_matrix(A_tag, A, N, N);
+        printf("runJacobiFlow: start iteration, A:\n");
+        printMatrix(N, N, A);
         /* calc pivot */
-        pivot = 0;
+        printf("runJacobiFlow: calc pivot\n");
+        pivot = 0.0;
         pivot_i = -1;
         pivot_j = -1;
         for (i=0; i < N; i++){
             for (j=0; j < N; j++){
                 if (i != j){
-                    if (A[i][j] > pivot){
+                    if (fabs(A[i][j]) > fabs(pivot)){
+                        printf("runJacobiFlow: fabs is: %f", fabs(A[i][j]));
                         pivot = A[i][j];
                         pivot_i = i;
                         pivot_j = j;
@@ -528,21 +583,32 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
                 }
             }
         }
+        printf("runJacobiFlow: pivot is %f\n", pivot);
+        printf("runJacobiFlow: pivot_i is %d\n", pivot_i);
+        printf("runJacobiFlow: pivot_j is %d\n", pivot_j);
         /* calc c,t,s */
-        obtainCT(A[pivot_i][pivot_i], A[pivot_j][pivot_j], pivot,c_t);
+        printf("runJacobiFlow: obtainCT\n");
+        obtainCT(A[pivot_i][pivot_i], A[pivot_j][pivot_j], pivot, c_t);
         c = c_t[0];
         t = c_t[1];
         s = c * t;
 
         /* transform A using "Relation between A and A'" */
+        printf("runJacobiFlow: calcATag\n");
         calcATag(A, A_tag, pivot_i, pivot_j,c,s);
 
+        printf("runJacobiFlow: calcV\n");
         calcV(V, c, s, pivot_i, pivot_j);
 
         iter_num = iter_num +1;
-        
-    } while (!is_diagonal(A,A_tag));
-    printf("stopped calculating pivot");
+
+        printf("runJacobiFlow: end of iteration, A is:\n");
+        printMatrix(N, N, A);
+        printf("runJacobiFlow: end of iteration, A_tag is:\n");
+        printMatrix(N, N, A_tag);
+
+    } while (is_diagonal(A, A_tag) == FALSE);
+    printf("stopped calculating pivot after %d iterations\n", iter_num);
     transposeSquareMatrix(V, N);
     for (i = 0; i < N ; i++) {
        eigensArray[i] = allocateEigen();
@@ -550,8 +616,8 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
        memcpy(eigensArray[i]->eigenvector, V[i], N);
     }
 
-    freeMatrix(A_tag , N);
-    freeMatrix(V, N);
+    freeMatrix(A_tag);
+    freeMatrix(V);
 
     qsort(eigensArray, N, sizeof(Eigen*), eigenComperator);
 
@@ -561,7 +627,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     printf("Jacobi END");
 }
 
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray, int print_bool){
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray, int kmeanspp_bool, int print_bool){
     /** TODO: Perform full spectral kmeans as described in 1.
      * The function should print appropriate output
      */
@@ -576,6 +642,10 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
      * 7. Assign points to relevant clusters as described in Algorithm1 of project description
      */
     double** U, **T;
+
+    U = NULL;
+    T = NULL;
+
     printf("in runSpkFlow\n");
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
     printf("back in spkFlow\n");
@@ -587,11 +657,18 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
     if (K == 0) {
         K = runEigengapHeuristic(eigensArray);
     }
+    /* allocateMatrix(N, K, U); */
     U = allocateMatrix(N, K);
     calcU(eigensArray, U);
-    T = allocateMatrix(N,K);
+    /* allocateMatrix(N, K, T); */
+    T = allocateMatrix(N, K);
     calcT(U,T);
-    kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
+    if (kmeanspp_bool){
+        kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
+    }
+    else {
+        kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
+    }
     if (print_bool){
         printMatrix(K,DIM,centroids_mat);
     }
@@ -681,14 +758,14 @@ int main(int argc, char* argv[]) {
     if (!strcmp(goal, "spk")) {
         printf("in spk flow\n");
         laplacian_mat = allocateMatrix(N, N);
-        centroids_mat = allocateMatrix(K,DIM);
+        centroids_mat = allocateMatrix(N, DIM);
         whichClusterArray = (int*)calloc(N,sizeof(int));
         assert(whichClusterArray && ERROR_OCCURED);
         eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
         assert(eigensArray && ERROR_OCCURED);
-        runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray, TRUE);
-        freeMatrix(laplacian_mat, N);
-        freeMatrix(centroids_mat,K);
+        runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray, FALSE, TRUE);
+        freeMatrix(laplacian_mat);
+        freeMatrix(centroids_mat);
         free(whichClusterArray);
         freeEigensArray(eigensArray, N);
     }
@@ -699,16 +776,18 @@ int main(int argc, char* argv[]) {
         printArray(N, graph->diagonal_degree_array);
     }
     else if (!strcmp(goal, "lnorm")) {
+        /* allocateMatrix(N, N, laplacian_mat); */
         laplacian_mat = allocateMatrix(N, N);
         runLnormFlow(graph, laplacian_mat, TRUE);
-        freeMatrix(laplacian_mat, N);
+        freeMatrix(laplacian_mat);
     }
     else if (!strcmp(goal, "jacobi")) {
+        /* allocateMatrix(N, N, laplacian_mat); */
         laplacian_mat = allocateMatrix(N, N);
         eigensArray = (Eigen**)malloc(N * sizeof(Eigen*));
         assert(eigensArray && ERROR_OCCURED);
         runJacobiFlow(graph, laplacian_mat, eigensArray, TRUE);
-        freeMatrix(laplacian_mat, N);
+        freeMatrix(laplacian_mat);
         freeEigensArray(eigensArray, N);
     }
     else {
