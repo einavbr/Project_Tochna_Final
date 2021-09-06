@@ -25,7 +25,6 @@ typedef struct Eigen {
     double* eigenvector;
 } Eigen;
 
-int printTest(int num);
 Graph* pythonGraphInit(char* k, char* file_name);
 void freeGraph(Graph* graph);
 double** allocateMatrix(int rows, int cols);

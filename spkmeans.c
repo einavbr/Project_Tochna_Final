@@ -103,10 +103,14 @@ void printEigens(Eigen** eigens, int n){
     int i;
     
     for (i=0; i < n; i++) {
+        printf("eigen value %d is:",i);
         printf("%f, ", eigens[i]->eigenvalue);
+        printf("\n");
     }
     for (i=0; i < n; i++) {
+        printf("eigen vector %d is:\n",i);
         printArray(N, eigens[i]->eigenvector);
+        printf("\n");
     }
 }
 
@@ -613,7 +617,10 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     for (i = 0; i < N ; i++) {
        eigensArray[i] = allocateEigen();
        eigensArray[i]->eigenvalue = A_tag[i][i];
-       memcpy(eigensArray[i]->eigenvector, V[i], N);
+       /*memcpy(eigensArray[i]->eigenvector, V[i], N);*/
+       for(j=0;j<N;j++){
+           eigensArray[i]->eigenvector[j] = V[i][j];
+       }
     }
 
     freeMatrix(A_tag);
@@ -624,7 +631,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     if (print_bool){
         printEigens(eigensArray, N);
     }
-    printf("Jacobi END");
+    printf("Jacobi END\n");
 }
 
 void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray, int kmeanspp_bool, int print_bool){
@@ -660,14 +667,23 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
     /* allocateMatrix(N, K, U); */
     U = allocateMatrix(N, K);
     calcU(eigensArray, U);
+    printf("U is:\n");
+    printMatrix(N,K,U);
     /* allocateMatrix(N, K, T); */
     T = allocateMatrix(N, K);
     calcT(U,T);
+    printf("T is:\n");
+    printMatrix(N,K,T);
     if (kmeanspp_bool){
         kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
+        printf("entred first if\n");
     }
     else {
         kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
+        printf("back in runSPKflow\n");
+        printf("centroids are:\n");
+        printMatrix(K,DIM,centroids_mat);
+
     }
     if (print_bool){
         printMatrix(K,DIM,centroids_mat);
@@ -800,15 +816,6 @@ int main(int argc, char* argv[]) {
     freeGraph(graph);
 
    return 1; 
-}
-
-int printTest(int num){
-    int res;
-
-    printf("Hello Keren, I'm in C\n");
-    res = num +8;
-
-    return res;
 }
 
 

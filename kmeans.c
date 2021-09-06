@@ -9,6 +9,7 @@ void changeCluster(int i, int newCluster, int* whichClusterArray);
 void calcNewCentroids(double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster, int N, int sizeOfPoint);
 void makeCendroidsAndAmountZero(double** centroidsArray,int* amount, int K, int pointSize);
 void free_double_pointer(double **array, int arrayLen);
+void printMatrix(int rows, int cols, double** matrix);
 
 void init(int K, int DIM, double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster) {
     
@@ -21,7 +22,8 @@ void init(int K, int DIM, double** datapointsArray, double** centroidsArray, int
         whichClusterArray[i] = i;
         amountOfPointsInCluster[i] = 1;
     }
-
+    printf("initial centroids:\n");
+    printMatrix(K,DIM,centroidsArray);
 }
 
 int findClosestCluster(double* point, double** centroidArray, int K, int sizeOfPoint){
@@ -86,14 +88,14 @@ int kmeans(int K,int N, int DIM,double** T, double** centroids_mat,int* whichClu
     int i,itermax, iteration, isChanged, currentCluster, newCluster, * amountOfPointsInCluster;
     double * point;
 
-    printf("in kmeans!!");
+    printf("in kmeans!!\n");
     itermax = 300;
 
     amountOfPointsInCluster = (int*)calloc(K, sizeof(int));
     assert(amountOfPointsInCluster && "amountOfPointsArray allocation failed");
     
     init(K, DIM, T, centroids_mat, whichClusterArray, amountOfPointsInCluster);
-
+    printf("finished kmeans init\n");
     isChanged = 1;
     iteration = 0;
     while (isChanged == 1) {
@@ -119,5 +121,6 @@ int kmeans(int K,int N, int DIM,double** T, double** centroids_mat,int* whichClu
         makeCendroidsAndAmountZero(centroids_mat, amountOfPointsInCluster, K, DIM);
         calcNewCentroids(T, centroids_mat, whichClusterArray, amountOfPointsInCluster, N, DIM); /* calc new centroid of new cluster for point[j] */
     }
+    printf("finished kmeans!!\n");
     return 1; 
 }
