@@ -34,5 +34,5 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
                 int *whichClusterArray, int print_bool);
 void runSpkFlowPython(Graph* graph, int *k, double*** T);
 void freeMatrix(double **m);
-
+double** kmeanspp(double** points, double** centroids, int K,int N, int POINT_SIZE, int MAX_ITER);
 #endif

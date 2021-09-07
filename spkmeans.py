@@ -58,4 +58,6 @@ elif GOAL == 'spk':
     print(K)
     print(T)
     # TODO: calc centroids
+    centroids_array = spkmeans.Python_kmeanspp(T,centroids,K,N,DIM,300) #parameters to pass
+    print_matrix(np.array(centroids_array))
 

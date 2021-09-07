@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "spkmeans.h"
 #include "kmeans.c"
+#include "kmeanspp.c"
 
 #define INVALID_INPUT "Invalid Input!"
 #define ERROR_OCCURED "An Error Has Occured"
