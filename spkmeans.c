@@ -303,30 +303,30 @@ int eigenComperator(const void *eigen1, const void *eigen2){
 
 double calcOff(double** mat) {
     int i, j;
-    double sumTot, sumDiag, powVal;
-
+  /*  double sumTot, sumDiag, powVal;*/
+    double sumTot, powVal;
     sumTot = 0;
-    sumDiag = 0;
+   /* sumDiag = 0;*/
     for (i = 0; i < N ; i++) {
-        for (j = 0; j < N ; j++) {
+        for (j = i+1; j < N ; j++) {
             powVal = pow(mat[i][j], 2);
-            if (i == j) {
-                sumDiag += powVal;
-            }
             sumTot += powVal;
         }
     }
-    return (sqrt(sumTot) - sumDiag);
+    sumTot = sumTot*2;
+    return sumTot;
 }
 
 int is_diagonal(double** A, double** A_tag){
     /** TODO: calculate the convergence.
-     * return True if the result is smaller than epsilon = 0.001
+     * return True if the result is smaller than epsilon = e^-15
      */
     double offA, offA_tag;
 
     offA = calcOff(A);
+    printf("is_diagonal: offA is: %f\n", offA);
     offA_tag = calcOff(A_tag);
+    printf("is_diagonal: offA_tag is: %f\n", offA_tag);
     printf("is_diagonal: offA - offA_tag is: %f\n", offA - offA_tag);
     printf("is_diagonal: epsilon is %.10f\n", EPSILON);
     printf("is_diagonal: return value is: %d\n", offA - offA_tag <= EPSILON);
@@ -361,6 +361,7 @@ void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, do
     A_tag[pivot_i][pivot_i] = pow(c,2) * A[pivot_i][pivot_i] + pow(s,2) * A[pivot_j][pivot_j] - 2 * s * c * A[pivot_i][pivot_j];
     A_tag[pivot_j][pivot_j] = pow(c,2) * A[pivot_i][pivot_i] + pow(s,2) * A[pivot_j][pivot_j] + 2 * s * c * A[pivot_i][pivot_j];
     A_tag[pivot_i][pivot_j] = 0;
+    A_tag[pivot_j][pivot_i] = 0;
     for (r = 0; r < N; r++) {
         if (r == pivot_i || r == pivot_j) {
             continue;
