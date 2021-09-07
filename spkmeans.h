@@ -5,8 +5,8 @@
 #define ERROR_OCCURED "An Error Has Occured"
 #define MAX_ITER 100
 #define MAX_ITER_KMEANS 300
-/*#define EPSILON pow(10,-15) */
-#define EPSILON exp(-15)
+#define EPSILON pow(10,-15)
+/* #define EPSILON exp(-15) */
 #define TRUE 1
 #define FALSE 0
 

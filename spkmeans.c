@@ -333,25 +333,25 @@ int is_diagonal(double** A, double** A_tag){
     return (offA - offA_tag <= EPSILON);
 }
 
-int obtainCT(double A_ii, double A_jj, double A_ij, double* c_t) {
+void obtainCT(double A_ii, double A_jj, double A_ij, double* c, double* t) {
     /** given a pivot value, return c and t as explained in the project */
-    double theta, c, t;
+    double theta, mone, mechane;
     int sign;
 
     printf("obtainCT: A_ij = %f, A_ii = %f, A_jj = %f\n", A_ij, A_ii, A_jj);
-    theta = (A_jj - A_ii) / A_ij;
+    mone = (A_jj - A_ii);
+    mechane = (2 * A_ij);
+    theta = mone / mechane;
     if (theta >= 0) {
         sign = 1;
     }
     else {
         sign = -1;
     }
+    printf("obtainCT: mone = %f, mechane = %f\n", A_jj - A_ii, 2 * A_ij);
     printf("obtainCT: theta = %f, sign = %d\n", theta, sign);
-    t = sign / (fabs(theta)+sqrt(pow(theta,2) + 1));
-    c = 1 / sqrt(pow(t,2) + 1);
-    c_t[0] = c;
-    c_t[1] = t;
-    return 1;
+    *t = sign / (fabs(theta)+sqrt(pow(theta,2) + 1));
+    *c = 1 / sqrt(pow(*t,2) + 1);
 }
 
 void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, double s) {
@@ -359,7 +359,7 @@ void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, do
 
     /* memcpy_matrix(A, A_tag, N, N); */
     A_tag[pivot_i][pivot_i] = pow(c,2) * A[pivot_i][pivot_i] + pow(s,2) * A[pivot_j][pivot_j] - 2 * s * c * A[pivot_i][pivot_j];
-    A_tag[pivot_j][pivot_j] = pow(c,2) * A[pivot_i][pivot_i] + pow(s,2) * A[pivot_j][pivot_j] + 2 * s * c * A[pivot_i][pivot_j];
+    A_tag[pivot_j][pivot_j] = pow(s,2) * A[pivot_i][pivot_i] + pow(c,2) * A[pivot_j][pivot_j] + 2 * s * c * A[pivot_i][pivot_j];
     A_tag[pivot_i][pivot_j] = 0;
     A_tag[pivot_j][pivot_i] = 0;
     for (r = 0; r < N; r++) {
@@ -373,11 +373,21 @@ void calcATag(double** A, double** A_tag, int pivot_i, int pivot_j, double c, do
     }
 }
 
-void calcV(double** V, double c, double s, int pivot_i, int pivot_j) {
-    V[pivot_i][pivot_i] = V[pivot_i][pivot_i] * c;
-    V[pivot_j][pivot_j] = V[pivot_j][pivot_j] * c;
-    V[pivot_i][pivot_j] = V[pivot_i][pivot_j] * s;
-    V[pivot_j][pivot_i] = V[pivot_j][pivot_i] * (-1 * s);
+void calcV(double** V, double c, double s, int pivot_i, int pivot_j, double* newV_col_i, double* newV_col_j) {
+    int k;
+
+    for (k=0; k < N ; k++){
+        newV_col_i[k] = 0.0;
+        newV_col_j[k] = 0.0;
+    }
+    for (k=0; k < N ; k++){
+        newV_col_i[k] = V[k][pivot_i] * c + V[k][pivot_j] * (-1 * s);
+        newV_col_j[k] = V[k][pivot_i] * s + V[k][pivot_j] * c;
+    }
+    for (k=0; k < N ; k++){
+        V[k][pivot_i] = newV_col_i[k];
+        V[k][pivot_j] = newV_col_j[k];
+    }
 }
 
 void calcU(Eigen** eigensArray, double** U) {
@@ -543,8 +553,8 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
      */
     int i, j, pivot_i, pivot_j, iter_num;
     double pivot, c, t, s;
-    double* c_t;
     double** A_tag, **V;
+    double* newV_col_i, *newV_col_j;
 
     /* first A mat is the laplacian */
     runLnormFlow(graph, A, FALSE);
@@ -555,13 +565,14 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     /* allocateMatrix(N, N, V); */
     printf("runJacobiFlow: alloc V\n");
     V = allocateMatrix(N, N);
-    c_t = (double*)calloc(2,sizeof(double));
+    newV_col_i = (double*)malloc(N * sizeof(double));
+    newV_col_j = (double*)malloc(N * sizeof(double));
     for (i=0 ; i<N ; i++) {
         V[i][i] = 1;
     }
     iter_num = 0;
     do {
-        if(iter_num == 100){
+        if(iter_num == MAX_ITER){
             break;
         }
         memcpy_matrix(A_tag, A, N, N);
@@ -589,24 +600,25 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
         printf("runJacobiFlow: pivot_j is %d\n", pivot_j);
         /* calc c,t,s */
         printf("runJacobiFlow: obtainCT\n");
-        obtainCT(A[pivot_i][pivot_i], A[pivot_j][pivot_j], pivot, c_t);
-        c = c_t[0];
-        t = c_t[1];
+        obtainCT(A[pivot_i][pivot_i], A[pivot_j][pivot_j], pivot, &c, &t);
         s = c * t;
+        printf("runJacobiFlow: c is %f, t is %f, s is %f\n", c, t, s);
 
         /* transform A using "Relation between A and A'" */
         printf("runJacobiFlow: calcATag\n");
         calcATag(A, A_tag, pivot_i, pivot_j,c,s);
 
         printf("runJacobiFlow: calcV\n");
-        calcV(V, c, s, pivot_i, pivot_j);
+        calcV(V, c, s, pivot_i, pivot_j, newV_col_i, newV_col_j);
+        /* printf("runJacobiFlow: V is:\n");
+        printMatrix(N, N, V); */
 
         iter_num = iter_num +1;
 
-        printf("runJacobiFlow: end of iteration, A is:\n");
+        /* printf("runJacobiFlow: end of iteration, A is:\n");
         printMatrix(N, N, A);
         printf("runJacobiFlow: end of iteration, A_tag is:\n");
-        printMatrix(N, N, A_tag);
+        printMatrix(N, N, A_tag); */
 
     } while (is_diagonal(A, A_tag) == FALSE);
     printf("stopped calculating pivot after %d iterations\n", iter_num);
@@ -620,14 +632,25 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
        }
     }
 
+    free(newV_col_i);
+    free(newV_col_j);
     freeMatrix(A_tag);
     freeMatrix(V);
-
-    qsort(eigensArray, N, sizeof(Eigen*), eigenComperator);
 
     if (print_bool){
         printEigens(eigensArray, N);
     }
+
+    printf("runJacobiFlow: print eigens before sort");
+    printEigens(eigensArray, N);
+
+    qsort(eigensArray, N, sizeof(Eigen*), eigenComperator);
+
+    printf("runJacobiFlow: print eigens after sort");
+    if (print_bool){
+        printEigens(eigensArray, N);
+    }
+
     printf("Jacobi END\n");
 }
 
@@ -651,8 +674,8 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
     printf("in runSpkFlow\n");
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
     printf("back in spkFlow\n");
-    printf("laplacian:\n");
-    printMatrix(N,N,laplacian_mat);
+    /* printf("laplacian:\n");
+    printMatrix(N,N,laplacian_mat); */
     printf("eigenArray:\n");
     printEigens(eigensArray,N);
 
