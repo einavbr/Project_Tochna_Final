@@ -634,7 +634,8 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     printf("Jacobi END\n");
 }
 
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray, int kmeanspp_bool, int print_bool){
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat,
+                int *whichClusterArray, int print_bool){
     /** TODO: Perform full spectral kmeans as described in 1.
      * The function should print appropriate output
      */
@@ -649,9 +650,6 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
      * 7. Assign points to relevant clusters as described in Algorithm1 of project description
      */
     double** U, **T;
-
-    U = NULL;
-    T = NULL;
 
     printf("in runSpkFlow\n");
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
@@ -674,21 +672,66 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
     calcT(U,T);
     printf("T is:\n");
     printMatrix(N,K,T);
-    if (kmeanspp_bool){
-        kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
-        printf("entred first if\n");
-    }
-    else {
-        kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
-        printf("back in runSPKflow\n");
-        printf("centroids are:\n");
-        printMatrix(K,DIM,centroids_mat);
 
-    }
+    kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
+    printf("back in runSPKflow\n");
+    printf("centroids are:\n");
+    printMatrix(K,DIM,centroids_mat);
+
     if (print_bool){
         printMatrix(K,DIM,centroids_mat);
     }
 }
+
+void runSpkFlowPython(Graph* graph, int *k, double*** T){
+    /** TODO: Perform full spectral kmeans as described in 1.
+     * The function should print appropriate output
+     */
+
+    /** Algorithm:
+     * 1. runLnormFlow (included in runJacobiFlow)
+     * 2. runJacobiFlow
+     * 3. if k==0: k = run_eigengap_heuristic(eigenvalues)
+     * 4. U = transpose_matrix(eigenvectors[:k])
+     * 5. T = renormalize_mat(U)
+     * 6. run_kmeanspp(T)
+     * 7. Assign points to relevant clusters as described in Algorithm1 of project description
+     */
+    double** U, **laplacian_mat;
+    Eigen** eigensArray;
+
+    printf("in runSpkFlow\n");
+
+    laplacian_mat = allocateMatrix(N, N);
+    assert(laplacian_mat && ERROR_OCCURED);
+    eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
+    assert(eigensArray && ERROR_OCCURED);
+
+    runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
+    printf("back in spkFlowPython\n");
+    printf("runSpkFlowPython: laplacian:\n");
+    printMatrix(N,N,laplacian_mat);
+    printf("runSpkFlowPython: eigenArray:\n");
+    printEigens(eigensArray,N);
+
+    if (K == 0) {
+        K = runEigengapHeuristic(eigensArray);
+    }
+    *k = K;
+
+    U = allocateMatrix(N, K);
+    calcU(eigensArray, U);
+    printf("runSpkFlowPython: U is:\n");
+    printMatrix(N,K,U);
+    /* allocateMatrix(N, K, T); */
+    *T = allocateMatrix(N, K);
+    calcT(U,*T);
+    printf("T is:\n");
+    printMatrix(N,K,*T);
+
+    freeMatrix(U);
+}
+
 
 /** MAIN **/
 int main(int argc, char* argv[]) {
@@ -779,7 +822,7 @@ int main(int argc, char* argv[]) {
         assert(whichClusterArray && ERROR_OCCURED);
         eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
         assert(eigensArray && ERROR_OCCURED);
-        runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray, FALSE, TRUE);
+        runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray, TRUE);
         freeMatrix(laplacian_mat);
         freeMatrix(centroids_mat);
         free(whichClusterArray);

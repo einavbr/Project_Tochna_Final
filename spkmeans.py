@@ -54,6 +54,8 @@ elif GOAL == 'jacobi':
     jacobi_mat = spkmeans.pythonRunJacobiFlow(str(K), FILE_NAME)
     print_matrix(np.array(jacobi_mat))
 elif GOAL == 'spk':
-    centroids_array = spkmeans.pythonRunSpkFlow(str(K), FILE_NAME)
-    print_matrix(np.array(centroids_array))
+    K, T = spkmeans.pythonRunSpkFlow(str(K), FILE_NAME)
+    print(K)
+    print(T)
+    # TODO: calc centroids
 

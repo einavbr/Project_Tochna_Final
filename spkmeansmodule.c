@@ -95,11 +95,11 @@ static PyObject* pythonRunLnormFlow(PyObject * self, PyObject * args){
     for (i = 0; i < graph->size; i++){
         PyLaplacianRow = PyList_New(graph->size);
         for (j = 0; j < graph->size; j++){
-            PyList_SET_ITEM(PyLaplacianRow, j, Py_BuildValue("d", graph->weighted_mat[i][j]));
+            PyList_SET_ITEM(PyLaplacianRow, j, Py_BuildValue("d", laplacian_mat[i][j]));
         }
         PyList_SET_ITEM(PyLaplacianMat, i, Py_BuildValue("O", PyLaplacianRow));
     }
-
+    /* free laplacian matrix */
     freeGraph(graph);
 
     return PyLaplacianMat;
@@ -125,6 +125,7 @@ static PyObject* pythonRunJacobiFlow(PyObject * self, PyObject * args){
     eigensArray = (Eigen**)malloc(graph->size * sizeof(Eigen*));
     assert(eigensArray && ERROR_OCCURED);
     runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
+    /* free laplacian matrix */
     PyJacobiMat = PyList_New(graph->size);
     if (!PyJacobiMat){
         return NULL;
@@ -132,24 +133,23 @@ static PyObject* pythonRunJacobiFlow(PyObject * self, PyObject * args){
     for (i = 0; i < graph->size; i++){
         PyJacobiRow = PyList_New(graph->size);
         for (j = 0; j < graph->size; j++){
-            PyList_SET_ITEM(PyJacobiRow, j, Py_BuildValue("d", graph->weighted_mat[i][j]));
+            PyList_SET_ITEM(PyJacobiRow, j, Py_BuildValue("d", eigensArray[i][j]));
         }
         PyList_SET_ITEM(PyJacobiMat, i, Py_BuildValue("O", PyJacobiRow));
     }
-
+    /* free eigensArray */
     freeGraph(graph);
 
     return PyJacobiMat;
 }
 
 static PyObject* pythonRunSpkFlow(PyObject * self, PyObject * args){
-    int i, j, N, DIM;
+    int i, j, N, DIM, K;
     char* k, *file_name;
     Graph* graph;
-    Eigen** eigensArray;
-    double** laplacian_mat, **centroids_mat;
-    int* whichClusterArray;
-    PyObject *PyCentroidsMat, *PyCentroidsRow;
+    double** T/* , ** centroids_mat */;
+    /* int* whichClusterArray; */
+    PyObject *PyTMat, *PyTRow, *PyRetTuple;
 
     if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
         return NULL;
@@ -160,30 +160,30 @@ static PyObject* pythonRunSpkFlow(PyObject * self, PyObject * args){
     }
     N = graph->size;
     DIM = graph->dim;
-    laplacian_mat = allocateMatrix(N, N);
-    assert(laplacian_mat && ERROR_OCCURED);
-    centroids_mat = allocateMatrix(N, DIM);
-    assert(centroids_mat && ERROR_OCCURED);
-    whichClusterArray = (int*)calloc(N,sizeof(int));
-    assert(whichClusterArray && ERROR_OCCURED);
-    eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
-    assert(eigensArray && ERROR_OCCURED);
-    runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray, TRUE, FALSE);
-    PyCentroidsMat = PyList_New(graph->size);
-    if (!PyCentroidsMat){
+    runSpkFlowPython(graph, &K, &T);
+    PyTMat = PyList_New(graph->size);
+    if (!PyTMat){
         return NULL;
     }
     for (i = 0; i < graph->size; i++){
-        PyCentroidsRow = PyList_New(graph->size);
-        for (j = 0; j < graph->size; j++){
-            PyList_SET_ITEM(PyCentroidsRow, j, Py_BuildValue("d", graph->weighted_mat[i][j]));
+        PyTRow = PyList_New(K);
+        for (j = 0; j < K; j++){
+            PyList_SET_ITEM(PyTRow, j, Py_BuildValue("d", T[i][j]));
         }
-        PyList_SET_ITEM(PyCentroidsMat, i, Py_BuildValue("O", PyCentroidsRow));
+        PyList_SET_ITEM(PyTMat, i, Py_BuildValue("O", PyTRow));
     }
-
+    freeMatrix(T);
     freeGraph(graph);
-
-    return PyCentroidsMat;
+    PyRetTuple = PyTuple_New(2);
+    if (!PyRetTuple)
+        return NULL;
+    PyTuple_SET_ITEM(PyRetTuple, 0, Py_BuildValue("i", K));
+    PyTuple_SET_ITEM(PyRetTuple, 1, PyTMat);
+    if (PyErr_Occurred()) {
+            Py_DECREF(PyRetTuple);
+            return NULL;
+        }
+    return PyRetTuple;
 }
 
 

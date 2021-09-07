@@ -30,6 +30,9 @@ void freeGraph(Graph* graph);
 double** allocateMatrix(int rows, int cols);
 void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool);
 void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool);
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat, int *whichClusterArray, int kmeanspp_bool, int print_bool);
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat,
+                int *whichClusterArray, int print_bool);
+void runSpkFlowPython(Graph* graph, int *k, double*** T);
+void freeMatrix(double **m);
 
 #endif
