@@ -1,6 +1,6 @@
 # define PY_SSIZE_T_CLEAN
 
-int POINT_SIZE, N, K, MAX_ITER;
+int POINT_SIZE, N, K;
 
 void printMatrixpp(int rows, int cols, double** matrix);
 void printMatrixintpp(int rows, int cols, int* matrix);
@@ -9,7 +9,7 @@ void changeClusterpp(int i, int newCluster, int* whichClusterArray);
 void makeCendroidsAndAmountZeropp(double** centroidsArray, int* amount);
 void calcNewCentroidspp(double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster);
 void free_double_pointerpp(double **array, int arrayLen);
-double** kmeanspp(double** points, double** centroids, int K,int N, int POINT_SIZE, int MAX_ITER);
+double** kmeanspp(double** points, double** centroids, int k, int n, int point_size);
 
 void printMatrixpp(int rows, int cols, double** matrix) {
     int i, j; 
@@ -95,15 +95,14 @@ void free_double_pointerpp(double **array, int arrayLen){
     free(array);
 }
 
-double** kmeanspp(double** points, double** centroids, int K,int N, int POINT_SIZE, int MAX_ITER) {
+double** kmeanspp(double** points, double** centroids, int k, int n, int point_size) {
     int i, isChanged, iteration, currentCluster, newCluster;
     int *whichClusterArray, *amountOfPointsInCluster;
     double *point;
 
-    K=K;
-    N=N;
-    POINT_SIZE = POINT_SIZE;
-    MAX_ITER = MAX_ITER;
+    K=k;
+    N=n;
+    POINT_SIZE = point_size;
     whichClusterArray = (int*)malloc(N * sizeof(int));
     assert(whichClusterArray && "whichClusterArray allocation failed");
     amountOfPointsInCluster = (int*)calloc(K, sizeof(int));
@@ -117,7 +116,7 @@ double** kmeanspp(double** points, double** centroids, int K,int N, int POINT_SI
     isChanged = 1;
     iteration = 0;
     while (isChanged == 1) {
-        if (iteration == MAX_ITER) {
+        if (iteration == MAX_ITER_KMEANS) {
             printf("main: max iteration reached\n");
             break;
         }

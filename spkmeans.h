@@ -1,6 +1,11 @@
 #ifndef SPKMEANS_H_   /* Include guard */
 #define SPKMEANS_H_
 
+#define INVALID_INPUT "Invalid Input!"
+#define ERROR_OCCURED "An Error Has Occured"
+#define MAX_ITER 100
+#define MAX_ITER_KMEANS 300
+#define EPSILON exp(-15)
 #define TRUE 1
 #define FALSE 0
 
@@ -34,5 +39,6 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
                 int *whichClusterArray, int print_bool);
 void runSpkFlowPython(Graph* graph, int *k, double*** T);
 void freeMatrix(double **m);
-double** kmeanspp(double** points, double** centroids, int K,int N, int POINT_SIZE, int MAX_ITER);
+double** kmeanspp(double** points, double** centroids, int k, int n, int point_size);
+void free_double_pointerpp(double **array, int arrayLen);
 #endif

@@ -2,9 +2,11 @@ from numpy.lib.twodim_base import diag
 import spkmeansmodule as spkmeans
 import numpy as np
 import sys
+import math
 
 INVALID_INPUT = 'Invalid Input!'
 ERROR_OCCURED = 'An Error Has Occured'
+MAX_ITER_KMEANS = 300
 
 # Functions on Matrices:
 def print_matrix(A, message = ''):
@@ -14,6 +16,48 @@ def print_matrix(A, message = ''):
     print(A)
     print('\n')
 
+#finding centroids indexes 
+def calc_centroids_indexes(k, all_points, point_size, N, max_iter):
+    Z = 1
+    point_index = 0
+    iternum = 0
+    np.random.seed(0)
+    indexes = [0 for i in range(k)]
+    indexes[0] = np.random.choice(N)
+    while (Z < k):
+        allProbs = [0 for i in range(N)]
+        while (point_index < N):
+            currpoint = all_points[point_index]
+            distances = math.inf
+            for centroid_index in range(Z):
+                currcentroid = all_points[indexes[centroid_index]]
+                D = 0.0
+                for c in range(point_size):
+                    D += (currpoint[c]-currcentroid[c])**2
+                if D < distances:
+                    distances = D
+            allProbs[point_index] = distances
+            point_index +=1
+        sumofProbs = sum(allProbs)
+        for i in range(N):
+            allProbs[i] = allProbs[i]/sumofProbs
+        indexes[Z] = np.random.choice(N, 1, p=allProbs)[0]
+        Z+=1
+        point_index = 0
+        iternum +=1
+        if (iternum > max_iter):
+            print ("max iteration numer reached")
+            break
+    return indexes
+
+#finding centroids from indexes
+def indexes_to_centroids(all_points, Centroids_Indexes,k):
+    res = []
+    for index in Centroids_Indexes:
+        res.append(all_points[index])
+    return res
+
+# MAIN
 try:
     K = int(sys.argv[1])
     print(f'k in python is: {K}')
@@ -54,10 +98,13 @@ elif GOAL == 'jacobi':
     jacobi_mat = spkmeans.pythonRunJacobiFlow(str(K), FILE_NAME)
     print_matrix(np.array(jacobi_mat))
 elif GOAL == 'spk':
-    K, T = spkmeans.pythonRunSpkFlow(str(K), FILE_NAME)
+    K, DIM, N, T = spkmeans.pythonRunSpkFlow(str(K), FILE_NAME)
     print(K)
     print(T)
-    # TODO: calc centroids
-    centroids_array = spkmeans.Python_kmeanspp(T,centroids,K,N,DIM,300) #parameters to pass
-    print_matrix(np.array(centroids_array))
+    all_points = np.array(T)
+    centroids_indexes = calc_centroids_indexes(K, all_points, DIM, N, MAX_ITER_KMEANS)
+    centroids = indexes_to_centroids(all_points, centroids_indexes, K)
+    # centroids_array = spkmeans.pythonRunkmeanspp(T, centroids, K, N, DIM)
+    print(spkmeans.pythonRunkmeanspp(T, centroids, K, N, DIM))
+    # print_matrix(np.array(centroids_array))
 

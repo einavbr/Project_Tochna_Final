@@ -1,12 +1,6 @@
 #include "spkmeans.h"
 #include <Python.h> 
 
-
-#define INVALID_INPUT "Invalid Input!"
-#define ERROR_OCCURED "An Error Has Occured"
-
-int POINT_SIZE, N, K, MAX_ITER;
-
 /** TODO:  
  * PyObject - for each function\s we'll be calling
  * PyMethodDef - 
@@ -18,83 +12,6 @@ int POINT_SIZE, N, K, MAX_ITER;
  * spkmeans.c does calculations and returns to python before step 6 -> Pyton calls kmeans++ (hw2) also through this module ->
  * return to spkmeans.c for step 7 and finish. 
  */
-
-// Module method definitions
-static double ** initVectorsArray (PyObject *VectorsList, int size){
-    double **vectors;
-    PyObject *curVector, *coordinate;
-    int i, j;
-    
-    vectors = (double**) malloc(size * sizeof(double*));
-    assert(vectors != NULL && "vectors allocation failed");
-    for (i = 0; i < size; i++){
-        curVector = PyList_GetItem(VectorsList, i);
-        vectors[i] = (double*) malloc(POINT_SIZE * sizeof(double*));
-        assert(vectors[i] != NULL && "Error in allocating memory!");
-        for (j = 0; j < POINT_SIZE; j++){
-           coordinate = PyList_GetItem(curVector, j);
-           vectors[i][j] = PyFloat_AsDouble(coordinate);
-        }
-    }
-
-    return vectors;
-}
-
-static PyObject* Python_kmeanspp(PyObject *self, PyObject *args) {
-    PyObject *pyPoints;
-    PyObject *pyCentroids;
-    PyObject *pyRes;
-    PyObject *pyThisCentroid;
-    int k, n, i, j, point_size, max_iter;
-    double **points, **centroids, **res;
-
-    if(!PyArg_ParseTuple(args, "OOiiii", &pyPoints, &pyCentroids, &k, &n, &point_size, &max_iter )){
-        return NULL;
-    }
-
-    N = PyObject_Length(pyPoints);
-    if (N < 0 || N != n) {
-        return NULL;
-    }
-
-    K = PyObject_Length(pyCentroids);
-    if (K < 0 || K != k) {
-        return NULL;
-    }
-
-    if (K >= N){
-        printf("Too many clusters, K is too big\n");
-        return NULL;
-    }
-
-    POINT_SIZE = point_size;
-    MAX_ITER = max_iter;
-
-    points = initVectorsArray(pyPoints, N);
-    centroids = initVectorsArray(pyCentroids, K);
-
-    res = kmeanspp(points, centroids, K, N, POINT_SIZE, MAX_ITER);
-    
-    if (res == NULL){
-        return NULL;
-    }
-    pyRes = PyList_New(K);
-    if (!pyRes){
-        return NULL;
-    }
-    for (i = 0; i < K; i++) {
-        pyThisCentroid = PyList_New(POINT_SIZE);
-        for (j = 0; j < POINT_SIZE; j++){
-            PyList_SET_ITEM(pyThisCentroid, j, Py_BuildValue("d", res[i][j]));
-        }
-        PyList_SET_ITEM(pyRes, i, Py_BuildValue("O", pyThisCentroid));
-    }
-
-    free_double_pointer(centroids, K);
-    free_double_pointer(points, N);
-
-    return pyRes;
-}
 
 static PyObject* pythonRunWamFlow(PyObject * self, PyObject * args){
     int i, j;
@@ -255,11 +172,13 @@ static PyObject* pythonRunSpkFlow(PyObject * self, PyObject * args){
     }
     freeMatrix(T);
     freeGraph(graph);
-    PyRetTuple = PyTuple_New(2);
+    PyRetTuple = PyTuple_New(4);
     if (!PyRetTuple)
         return NULL;
     PyTuple_SET_ITEM(PyRetTuple, 0, Py_BuildValue("i", K));
-    PyTuple_SET_ITEM(PyRetTuple, 1, PyTMat);
+    PyTuple_SET_ITEM(PyRetTuple, 1, Py_BuildValue("i", DIM));
+    PyTuple_SET_ITEM(PyRetTuple, 2, Py_BuildValue("i", N));
+    PyTuple_SET_ITEM(PyRetTuple, 3, PyTMat);
     if (PyErr_Occurred()) {
             Py_DECREF(PyRetTuple);
             return NULL;
@@ -267,15 +186,87 @@ static PyObject* pythonRunSpkFlow(PyObject * self, PyObject * args){
     return PyRetTuple;
 }
 
+// Kmeans++ Module method definitions
+static double ** initVectorsArray (PyObject *VectorsList, int size, int point_size){
+    double **vectors;
+    PyObject *curVector, *coordinate;
+    int i, j;
+    
+    vectors = (double**) malloc(size * sizeof(double*));
+    assert(vectors != NULL && ERROR_OCCURED);
+    for (i = 0; i < size; i++){
+        curVector = PyList_GetItem(VectorsList, i);
+        vectors[i] = (double*) malloc(point_size * sizeof(double*));
+        assert(vectors[i] != NULL && ERROR_OCCURED);
+        for (j = 0; j < point_size; j++){
+           coordinate = PyList_GetItem(curVector, j);
+           vectors[i][j] = PyFloat_AsDouble(coordinate);
+        }
+    }
+
+    return vectors;
+}
+
+static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
+    PyObject *pyPoints;
+    PyObject *pyCentroids;
+    PyObject *pyRes;
+    PyObject *pyThisCentroid;
+    int k, n, i, j, point_size;
+    double **points, **centroids, **res;
+    PyObject* repr, *str;
+    char* bytes;
+
+    if(!PyArg_ParseTuple(args, "OOiii", &pyPoints, &pyCentroids, &k, &n, &point_size)){
+        return NULL;
+    }
+
+    if (k >= n){
+        printf("%s", INVALID_INPUT);
+        return NULL;
+    }
+
+    printf("starting kmeans\n");
+    points = initVectorsArray(pyPoints, n, point_size);
+    printf("initialized points\n");
+    centroids = initVectorsArray(pyCentroids, k, point_size);
+    printf("initialized centroids\n");
+
+    res = kmeanspp(points, centroids, k, n, point_size);
+    printf("finished kmeanspp\n");
+    
+    if (res == NULL){
+        return NULL;
+    }
+    pyRes = PyList_New(k);
+    if (!pyRes){
+        return NULL;
+    }
+    for (i = 0; i < k; i++) {
+        pyThisCentroid = PyList_New(point_size);
+        for (j = 0; j < point_size; j++){
+            PyList_SET_ITEM(pyThisCentroid, j, Py_BuildValue("d", res[i][j]));
+        }
+        PyList_SET_ITEM(pyRes, i, Py_BuildValue("O", pyThisCentroid));
+    }
+    printf("initialized pyRes\n");
+
+    free_double_pointerpp(centroids, k);
+    free_double_pointerpp(points, n);
+
+    repr = PyObject_Repr(pyRes);
+    str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
+    bytes = PyBytes_AS_STRING(str);
+
+    printf("REPR: %s\n", bytes);
+
+    return pyRes;
+}
+
 
 // Method definition object for this extension
 static PyMethodDef spkmeansMethods[] = { 
     {  
-        "pythonRunkmeanspp",
-        (PyCFunction) Python_kmeanspp,
-        METH_VARARGS,
-        PyDoc_STR("Run kmeans++ flow")
-    },{  
         "pythonRunWamFlow",
         (PyCFunction) pythonRunWamFlow,
         METH_VARARGS,
@@ -304,6 +295,12 @@ static PyMethodDef spkmeansMethods[] = {
         (PyCFunction) pythonRunSpkFlow,
         METH_VARARGS,
         PyDoc_STR("Run SPK flow")
+    },
+    {  
+        "pythonRunkmeanspp",
+        (PyCFunction) pythonRunkmeanspp,
+        METH_VARARGS,
+        PyDoc_STR("Run kmeans++ flow")
     },
     {NULL, NULL, 0, NULL}
 };

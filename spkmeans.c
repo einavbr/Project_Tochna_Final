@@ -8,11 +8,6 @@
 #include "kmeans.c"
 #include "kmeanspp.c"
 
-#define INVALID_INPUT "Invalid Input!"
-#define ERROR_OCCURED "An Error Has Occured"
-#define MAX_ITER 100
-#define EPSILON exp(-15)
-
 int N, K, DIM;
 
 double calcEuclideanNorm(double* vector1, double* vector2);
