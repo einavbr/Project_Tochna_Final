@@ -419,6 +419,8 @@ int runEigengapHeuristic(Eigen** eigensArray) {
         }
     }
 
+    printf("maxI: %d", maxI);
+
     return maxI;
 }
 
