@@ -43,4 +43,6 @@ void runSpkFlowPython(Graph* graph, int *k, double*** T);
 void freeMatrix(double **m);
 double** kmeanspp(double** points, double** centroids, int k, int n, int point_size);
 void free_double_pointerpp(double **array, int arrayLen);
+void printMatrix(int rows, int cols, double** matrix);
+
 #endif

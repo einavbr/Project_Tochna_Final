@@ -191,16 +191,30 @@ static double ** initVectorsArray (PyObject *VectorsList, int size, int point_si
     double **vectors;
     PyObject *curVector, *coordinate;
     int i, j;
+    PyObject* repr, *str;
+    const char *bytes;
     
     vectors = (double**) malloc(size * sizeof(double*));
     assert(vectors != NULL && ERROR_OCCURED);
+    printf("initVectorsArray: allocated vectors with %d rows and %d columns\n", size, point_size);
     for (i = 0; i < size; i++){
         curVector = PyList_GetItem(VectorsList, i);
         vectors[i] = (double*) malloc(point_size * sizeof(double*));
         assert(vectors[i] != NULL && ERROR_OCCURED);
+        /* for (i = 0; i < point_size ; i++){
+            repr = PyObject_Repr(curVector[i]);
+            str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
+            *bytes = PyBytes_AS_STRING(str);
+            printf("REPR: %s\n", bytes);
+        } */
         for (j = 0; j < point_size; j++){
-           coordinate = PyList_GetItem(curVector, j);
-           vectors[i][j] = PyFloat_AsDouble(coordinate);
+            coordinate = PyList_GetItem(curVector, j);
+            repr = PyObject_Repr(coordinate);
+            str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
+            bytes = PyBytes_AS_STRING(str);
+            printf("REPR: %s\n", bytes);
+            vectors[i][j] = PyFloat_AsDouble(coordinate);
+            printf("initVectorsArray: added coordinate %f\n", vectors[i][j]);
         }
     }
 
@@ -211,18 +225,31 @@ static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
     PyObject *pyPoints;
     PyObject *pyCentroids;
     PyObject *pyRes;
-    PyObject *pyThisCentroid;
+    PyObject *pyThisCentroid, *curVector, *coordinate;
     int k, n, i, j, point_size;
     double **points, **centroids, **res;
     PyObject* repr, *str;
-    char* bytes;
+    const char *bytes;
 
     if(!PyArg_ParseTuple(args, "OOiii", &pyPoints, &pyCentroids, &k, &n, &point_size)){
         return NULL;
     }
+    printf("here\n");
     if(pyCentroids == NULL){
-        printf("baaaaa");
+        printf("%s", ERROR_OCCURED);
+        return NULL;
     }
+    printf("here2\n");
+/*     for (i = 0; i < k; i++){
+        curVector = PyList_GetItem(pyCentroids, i);
+        for (j = 0; j < k; j++){
+            coordinate = PyList_GetItem(curVector, j);
+            repr = PyObject_Repr(coordinate);
+            str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
+            bytes = PyBytes_AS_STRING(str);
+            printf("REPR: %s\n", bytes);
+        }
+    } */
     if (k >= n){
         printf("%s", INVALID_INPUT);
         return NULL;
@@ -231,9 +258,9 @@ static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
     printf("starting kmeans\n");
     points = initVectorsArray(pyPoints, n, point_size);
     printf("initialized points\n");
-    centroids = initVectorsArray(pyCentroids, k, point_size); /* ABAAYA */
+    centroids = initVectorsArray(pyCentroids, k, k); /* ABAAYA */
     printf("initialized centroids\n");
-    res = kmeanspp(points, centroids, k, n, point_size);
+    res = kmeanspp(points, centroids, k, n, k);
     printf("finished kmeanspp\n");
     
     if (res == NULL){
@@ -244,8 +271,8 @@ static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
         return NULL;
     }
     for (i = 0; i < k; i++) {
-        pyThisCentroid = PyList_New(point_size);
-        for (j = 0; j < point_size; j++){
+        pyThisCentroid = PyList_New(k);
+        for (j = 0; j < k; j++){
             PyList_SET_ITEM(pyThisCentroid, j, Py_BuildValue("d", res[i][j]));
         }
         PyList_SET_ITEM(pyRes, i, Py_BuildValue("O", pyThisCentroid));
@@ -261,7 +288,8 @@ static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
 
     printf("REPR: %s\n", bytes); */
 
-    return PyLong_FromDouble(42);
+    /* return PyLong_FromDouble(42); */
+    return pyRes;
 }
 
 
