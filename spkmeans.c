@@ -150,7 +150,6 @@ void printArray(int len, double* matrix) {
         printf("%.4f,", curr);
         }
     }
-    printf("\n");
 }
 
 /** ---------------------------------- ALLOCATIONS ---------------------------------------- **/
@@ -394,6 +393,7 @@ void calcT(double **U, double **T){
     double* zeros;
 
     zeros = (double*)calloc(K, sizeof(double));
+    printf("K is: %d\n",K);
     assert(zeros && ERROR_OCCURED);
     for(i=0 ; i<N ; i++){
         rowLength = calcEuclideanNorm(U[i], zeros, K);
@@ -410,7 +410,12 @@ int runEigengapHeuristic(Eigen** eigensArray) {
 
     maxI = -1;
     maxGap = -1.0;
-    boundI = ((N / 2) + 1 < N - 2) ? (N / 2) + 1 : N - 2;
+    boundI = (N / 2) + 1;
+
+    printf("runEigengapHeuristic: N is: %d\n", N);
+    printf("runEigengapHeuristic: boundI is: %d\n", boundI);
+    /* printf("runEigengapHeuristic: eigensArray is:\n");
+    printEigens(eigensArray); */
 
     for (i=1; i < boundI; i++) {
         gap = eigensArray[i]->eigenvalue - eigensArray[i-1]->eigenvalue;
@@ -490,6 +495,7 @@ void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
     if (print_bool){
         printMatrix(N, N, laplacian_mat);
     }
+    
 }
 
 void runJacobiFlow(double** A, Eigen** eigensArray, int printBool){
@@ -508,10 +514,13 @@ void runJacobiFlow(double** A, Eigen** eigensArray, int printBool){
     }
     iter_num = 0;
     do {
+
         if(iter_num == MAX_ITER){
             break;
         }
+
         memcpy_matrix(A_tag, A, N, N);
+
         /* calc pivot */
         pivot = 0.0;
         pivot_i = -1;
@@ -533,7 +542,7 @@ void runJacobiFlow(double** A, Eigen** eigensArray, int printBool){
 
         /* transform A using "Relation between A and A'" */
         calcATag(A, A_tag, pivot_i, pivot_j,c,s);
-        
+
         calcV(V, c, s, pivot_i, pivot_j, newV_col_i, newV_col_j);
 
         iter_num = iter_num +1;
@@ -725,13 +734,13 @@ int main(int argc, char* argv[]) {
 
     if (!strcmp(goal, "spk")) {
         laplacian_mat = allocateMatrix(N, N);
-        /* printf("K in main is: %d\n", K);
-        centroids_mat = allocateMatrix(K, K); */
         whichClusterArray = (int*)calloc(N,sizeof(int));
         assert(whichClusterArray && ERROR_OCCURED);
         eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
         assert(eigensArray && ERROR_OCCURED);
+
         runSpkFlow(graph, laplacian_mat, eigensArray, whichClusterArray, TRUE);
+        
         freeMatrix(laplacian_mat);
         free(whichClusterArray);
         freeEigensArray(eigensArray);

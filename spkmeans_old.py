@@ -68,7 +68,7 @@ def get_frobenius_norm(A):
 
 # Functions on Matrices:
 def print_matrix(A, message = ''):
-    # TODO : print the matrix, take print func from PT1 or PT2
+    # print the matrix, take print func from PT1 or PT2
     print(message)
     np.set_printoptions(precision=4, suppress=True)
     print(A)
