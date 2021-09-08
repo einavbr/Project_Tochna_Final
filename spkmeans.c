@@ -90,14 +90,16 @@ void printEigens(Eigen** eigens, int n){
         if(curr < 0 &&  curr > -0.00005){
                 curr = 0.0;
         }
-        printf("eigen value %d is:",i);
-        printf("%.4f, ", curr);
-        printf("\n");
+        if (i == n-1){
+            printf("%.4f\n", curr);
+        }
+        else {
+            printf("%.4f,", curr);
+        }
     }
+
     for (i=0; i < n; i++) {
-        printf("eigen vector %d is:\n",i);
         printArray(N, eigens[i]->eigenvector);
-        printf("\n");
     }
 }
 
@@ -142,7 +144,7 @@ void printArray(int len, double* matrix) {
         printf("%.4f,", curr);
         }
     }
-    printf("\n\n");
+    printf("\n");
 }
 
 /** ---------------------------------- ALLOCATIONS ---------------------------------------- **/
@@ -485,7 +487,7 @@ void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
     }
 }
 
-void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool) {
+void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int printBool) {
     /** 
      * Calculate and output the eigenvalues and eigenvectors as described in 1.2.1.
      * 
@@ -560,7 +562,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     freeMatrix(A_tag);
     freeMatrix(V);
 
-    if (print_bool){
+    if (printBool){
         printEigens(eigensArray, N);
     }
 
