@@ -131,8 +131,6 @@ void printMatrix(int rows, int cols, double** matrix) {
         }
         printf("\n");
     }
-
-    printf("\n");
 }
 
 void printArray(int len, double* matrix) {
