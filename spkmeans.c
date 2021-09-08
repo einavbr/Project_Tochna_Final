@@ -87,16 +87,16 @@ void constructGraph(double** vertices, double** weighted_mat, double* diagonal_d
 
 /** ---------------------------------- PRINTS ---------------------------------------- **/
 
-void printEigens(Eigen** eigens, int n){
+void printEigens(Eigen** eigens){
     int i;
     double curr; 
 
-    for (i=0; i < n; i++) {
+    for (i=0; i < N; i++) {
         curr = eigens[i]->eigenvalue;
         if(curr < 0 &&  curr > -0.00005){
                 curr = 0.0;
         }
-        if (i == n-1){
+        if (i == N-1){
             printf("%.4f\n", curr);
         }
         else {
@@ -104,7 +104,7 @@ void printEigens(Eigen** eigens, int n){
         }
     }
 
-    for (i=0; i < n; i++) {
+    for (i=0; i < N; i++) {
         printArray(N, eigens[i]->eigenvector);
     }
 }
@@ -132,7 +132,7 @@ void printMatrix(int rows, int cols, double** matrix) {
         printf("\n");
     }
 
-    printf("\n\n");
+    printf("\n");
 }
 
 void printArray(int len, double* matrix) {
@@ -454,9 +454,8 @@ Graph* pythonGraphInit(char* k, char* file_name) {
     }
 
     /* Create the graph */
-    /* allocateMatrix(N, DIM, vertices); */
     vertices = allocateMatrix(N, DIM);
-    /* allocateMatrix(N, N, weighted_mat); */
+    ingestInput(vertices, file);
     weighted_mat = allocateMatrix(N, N);
     diagonal_degree_array = (double*)calloc(N, sizeof(double));
     assert(diagonal_degree_array && ERROR_OCCURED);
@@ -555,7 +554,7 @@ void runJacobiFlow(double** A, Eigen** eigensArray, int printBool){
     freeMatrix(V);
 
     if (printBool){
-        printEigens(eigensArray, N);
+        printEigens(eigensArray);
     }
 }
 
@@ -699,6 +698,7 @@ int main(int argc, char* argv[]) {
 
     input_matrix = allocateMatrix(N, DIM);
     ingestInput(input_matrix, file);
+    fclose(file);
 
     /* handle jacobi goal */
     if (!strcmp(goal, "jacobi")) {
@@ -746,8 +746,7 @@ int main(int argc, char* argv[]) {
         printf("%s", INVALID_INPUT);
         exit(1);
     }
-    
-    fclose(file);
+
     freeMatrix(input_matrix);
     freeGraph(graph);
 

@@ -82,7 +82,6 @@ static PyObject* pythonRunJacobiFlow(PyObject * self, PyObject * args){
     char* k, *file_name;
     Graph* graph;
     Eigen** eigensArray;
-    double** laplacian_mat;
 
     if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
         return NULL;
@@ -91,14 +90,12 @@ static PyObject* pythonRunJacobiFlow(PyObject * self, PyObject * args){
     if (graph == NULL){
         return NULL;
     }
-    laplacian_mat = allocateMatrix(graph->size, graph->size);
-    assert(laplacian_mat && ERROR_OCCURED);
+
     eigensArray = (Eigen**)malloc(graph->size * sizeof(Eigen*));
     assert(eigensArray && ERROR_OCCURED);
-    runJacobiFlowForSpk(graph, laplacian_mat, eigensArray, TRUE);
+    runJacobiFlow(graph->vertices, eigensArray, TRUE);
 
     freeEigensArray(eigensArray);
-    freeMatrix(laplacian_mat);
     freeGraph(graph);
 
     return PyLong_FromLong(42);
@@ -114,10 +111,12 @@ static PyObject* pythonRunSpkFlow(PyObject * self, PyObject * args){
     if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
         return NULL;
     }
+    
     graph = pythonGraphInit(k, file_name);
     if (graph == NULL){
         return NULL;
     }
+
     N = graph->size;
     DIM = graph->dim;
     runSpkFlowPython(graph, &K, &T);
