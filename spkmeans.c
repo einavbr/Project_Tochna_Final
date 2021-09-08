@@ -13,7 +13,6 @@ int N, K, DIM;
 double calcEuclideanNorm(double* vector1, double* vector2, int len);
 void printMatrix(int rows, int cols, double** matrix);
 void printArray(int len, double* matrix);
-int printTest(int num);
 
 /** ---------------------------------- GRAPH FUNCTIONS ---------------------------------------- **/
 
@@ -97,10 +96,15 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
 
 void printEigens(Eigen** eigens, int n){
     int i;
-    
+    double curr; 
+
     for (i=0; i < n; i++) {
+        curr = eigens[i]->eigenvalue;
+        if(curr < 0 &&  curr > -0.00005){
+                curr = 0.0;
+        }
         printf("eigen value %d is:",i);
-        printf("%f, ", eigens[i]->eigenvalue);
+        printf("%.4f, ", curr);
         printf("\n");
     }
     for (i=0; i < n; i++) {
@@ -113,17 +117,23 @@ void printEigens(Eigen** eigens, int n){
 void printMatrix(int rows, int cols, double** matrix) {
     /** TODO: fix -0.0000 rounding**/
     int i, j; 
+    double curr; 
     printf("in printMatrix\n");
     if (!matrix){
         printf("matrix is NULL\n");
     }
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
+            curr = matrix[i][j];
+            /* fixing -0.0 printing */
+            if(curr < 0 &&  curr > -0.00005){
+                curr = 0.0;
+            }
             if (j == cols - 1) {
-                printf("%f", matrix[i][j]); 
+                printf("%.4f", curr); 
             }
             else {
-                printf("%f,", matrix[i][j]); 
+                printf("%.4f,", curr); 
             }
         }
         printf("\n");
@@ -134,12 +144,17 @@ void printMatrix(int rows, int cols, double** matrix) {
 
 void printArray(int len, double* matrix) {
     int i; 
+    double curr;
     for (i = 0; i < len; i++) {
-         if ( i == len - 1) {
-                printf("%.4f", matrix[i]);
+        curr = matrix[i];
+        if(curr < 0 &&  curr > -0.00005){
+                curr = 0.0;
+        }
+        if ( i == len - 1) {
+            printf("%.4f",curr);
         }
         else{
-        printf("%.4f,", matrix[i]);
+        printf("%.4f,", curr);
         }
     }
     printf("\n\n");
