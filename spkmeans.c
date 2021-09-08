@@ -10,7 +10,7 @@
 
 int N, K, DIM;
 
-double calcEuclideanNorm(double* vector1, double* vector2);
+double calcEuclideanNorm(double* vector1, double* vector2, int len);
 void printMatrix(int rows, int cols, double** matrix);
 void printArray(int len, double* matrix);
 int printTest(int num);
@@ -29,7 +29,7 @@ void fillWeightedMat(double** vertices, double** weighted_mat,int N){
     for(i=0 ; i<N ; i++){
         /* weighted_mat[i][i] = 0.0; */
         for(j=i+1; j<N ; j++){
-            euclidianNorm = calcEuclideanNorm(vertices[i],vertices[j]);
+            euclidianNorm = calcEuclideanNorm(vertices[i],vertices[j], DIM);
             power = -euclidianNorm/2;
             weighted_mat[i][j] = weighted_mat[j][i] = exp(power);
             /* printf("weighted matrix in %d,%d is: %f\n",i,j,exp(power));
@@ -268,7 +268,7 @@ void transposeSquareMatrix(double** matrix, int N) {
     }
 }
 
-double calcEuclideanNorm(double* vector1, double* vector2){
+double calcEuclideanNorm(double* vector1, double* vector2, int len){
     /*
      * given two points, this function returns the euclidean norm 
      */  
@@ -276,7 +276,7 @@ double calcEuclideanNorm(double* vector1, double* vector2){
     double euclidianNorm;
     euclidianNorm = 0;
 
-    for(i=0; i< DIM; i++){
+    for(i=0; i< len; i++){
         euclidianNorm += pow((vector1[i]-vector2[i]),2);
     }
     /* printf("euclidian norm:");
@@ -293,12 +293,24 @@ int eigenComperator(const void *eigen1, const void *eigen2){
      * This is a compare function which will take 2 elements from the eigen array 
      * and return eigen1->eigenvalue - eigen2->eigenvalue
      */
-    Eigen *eigenOne = (Eigen *)eigen1;
-    Eigen *eigenTwo = (Eigen *)eigen2;
-    if(eigenOne->eigenvalue < eigenTwo->eigenvalue) {
-        return 0;
+    double eigenValueOne, eigenValueTwo;
+    eigenValueOne = ((*(Eigen **)eigen1)) -> eigenvalue;
+    eigenValueTwo = ((*(Eigen **)eigen2)) -> eigenvalue;
+    /* printf("eigenOne->eigenvalue = %f\n", eigenOne->eigenvalue);
+    printf("eigenTwo->eigenvalue = %f\n", eigenTwo->eigenvalue); */
+    printf("eigenvalue1: %f\n", eigenValueOne);
+    printf("eigenvalue2: %f\n", eigenValueTwo);
+    if (eigenValueOne - eigenValueTwo < 0){
+        return -1;
     }
-    return 1;
+    else{
+        if (eigenValueOne - eigenValueTwo > 0){
+            return 1;
+        }
+        else{
+            return (((*(Eigen **)eigen1)) -> index) - (((*(Eigen **)eigen2)) -> index);
+        }
+    }
 }
 
 double calcOff(double** mat) {
@@ -407,32 +419,17 @@ void calcU(Eigen** eigensArray, double** U) {
 void calcT(double **U, double **T){
     int i,j;
     double rowLength;
+    double* zeros;
 
+    zeros = (double*)calloc(K, sizeof(double));
+    assert(zeros && ERROR_OCCURED);
     for(i=0 ; i<N ; i++){
-        rowLength = 0;
-        for(j=0 ; j<2*K ; j++){
-            if(j<K){
-                rowLength = rowLength + pow(U[i][j],2);
-            }
-            else if(j==K){
-                rowLength = pow(rowLength,0.5);
-                if(rowLength != 0){
-                    T[i][2*K-j] = U[i][2*K-j] / rowLength;
-                }
-                else{
-                    T[i][2*K-j] = 0;
-                }
-            }
-            else{
-               if(rowLength != 0){
-                    T[i][2*K-j] = U[i][2*K-j] / rowLength;
-                }
-                else{
-                    T[i][2*K-j] = 0;
-                } 
-            }
+        rowLength = calcEuclideanNorm(U[i], zeros, K);
+        for(j=0 ; j<K ; j++){
+            T[i][j] = U[i][j] / rowLength;
         }
     }
+    free(zeros);
 }
 
 int runEigengapHeuristic(Eigen** eigensArray) {
@@ -626,6 +623,7 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int print_bool
     for (i = 0; i < N ; i++) {
        eigensArray[i] = allocateEigen();
        eigensArray[i]->eigenvalue = A_tag[i][i];
+       eigensArray[i]->index = i;
        /*memcpy(eigensArray[i]->eigenvector, V[i], N);*/
        for(j=0;j<N;j++){
            eigensArray[i]->eigenvector[j] = V[i][j];
@@ -693,13 +691,13 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
     printf("T is:\n");
     printMatrix(N,K,T);
 
-    kmeans(K,N,DIM,T, centroids_mat, whichClusterArray);
+    kmeans(K,N,K,T, centroids_mat, whichClusterArray);
     printf("back in runSPKflow\n");
     printf("centroids are:\n");
-    printMatrix(K,DIM,centroids_mat);
+    printMatrix(K,K,centroids_mat);
 
     if (print_bool){
-        printMatrix(K,DIM,centroids_mat);
+        printMatrix(K,K,centroids_mat);
     }
 }
 

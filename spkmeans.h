@@ -29,6 +29,7 @@ typedef struct Eigen {
     /* An Eigen is a "tuple" of an eigenvalue and it's corresponding eigenvector */
     double eigenvalue;
     double* eigenvector;
+    int index;
 } Eigen;
 
 Graph* pythonGraphInit(char* k, char* file_name);

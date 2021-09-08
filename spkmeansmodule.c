@@ -220,7 +220,9 @@ static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
     if(!PyArg_ParseTuple(args, "OOiii", &pyPoints, &pyCentroids, &k, &n, &point_size)){
         return NULL;
     }
-
+    if(pyCentroids == NULL){
+        printf("baaaaa");
+    }
     if (k >= n){
         printf("%s", INVALID_INPUT);
         return NULL;
@@ -229,9 +231,8 @@ static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
     printf("starting kmeans\n");
     points = initVectorsArray(pyPoints, n, point_size);
     printf("initialized points\n");
-    centroids = initVectorsArray(pyCentroids, k, point_size);
+    centroids = initVectorsArray(pyCentroids, k, point_size); /* ABAAYA */
     printf("initialized centroids\n");
-
     res = kmeanspp(points, centroids, k, n, point_size);
     printf("finished kmeanspp\n");
     
@@ -254,13 +255,13 @@ static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
     free_double_pointerpp(centroids, k);
     free_double_pointerpp(points, n);
 
-    repr = PyObject_Repr(pyRes);
+    /* repr = PyObject_Repr(pyRes);
     str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
     bytes = PyBytes_AS_STRING(str);
 
-    printf("REPR: %s\n", bytes);
+    printf("REPR: %s\n", bytes); */
 
-    return pyRes;
+    return PyLong_FromDouble(42);
 }
 
 
