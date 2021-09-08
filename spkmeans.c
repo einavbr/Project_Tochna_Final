@@ -405,21 +405,20 @@ void calcT(double **U, double **T){
 }
 
 int runEigengapHeuristic(Eigen** eigensArray) {
-    int i, maxI;
+    int i, maxI, boundI;
     double gap, maxGap;
 
     maxI = -1;
     maxGap = -1.0;
+    boundI = ((N / 2) + 1 < N - 2) ? (N / 2) + 1 : N - 2;
 
-    for (i=1; i < N/2 ; i++) {
+    for (i=1; i < boundI; i++) {
         gap = eigensArray[i]->eigenvalue - eigensArray[i-1]->eigenvalue;
         if (gap > maxGap) {
             maxI = i;
             maxGap = gap;
         }
     }
-
-    printf("maxI: %d", maxI);
 
     return maxI;
 }
@@ -579,7 +578,7 @@ void runJacobiFlowForSpk(Graph* graph, double** A, Eigen** eigensArray) {
     qsort(eigensArray, N, sizeof(Eigen*), eigenComperator);
 }
 
-void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, double **centroids_mat,
+void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray,
                 int *whichClusterArray, int print_bool){
     /** Perform full spectral kmeans as described in 1.
      * The function should print appropriate output
@@ -594,7 +593,7 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
      * 6. run_kmeanspp(T)
      * 7. Assign points to relevant clusters as described in Algorithm1 of project description
      */
-    double** U, **T;
+    double** U, **T, **centroids_mat;
 
     runJacobiFlowForSpk(graph, laplacian_mat, eigensArray);
 
@@ -602,17 +601,21 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
         K = runEigengapHeuristic(eigensArray);
     }
 
+    centroids_mat = allocateMatrix(K, K);
+
     U = allocateMatrix(N, K);
     calcU(eigensArray, U);
 
     T = allocateMatrix(N, K);
     calcT(U,T);
 
-    kmeans(K,N,K,T, centroids_mat, whichClusterArray);
+    kmeans(K, N, T, centroids_mat, whichClusterArray);
 
     if (print_bool){
         printMatrix(K,K,centroids_mat);
     }
+
+    freeMatrix(centroids_mat);
 }
 
 void runSpkFlowPython(Graph* graph, int *k, double*** T){
@@ -660,7 +663,7 @@ void runSpkFlowPython(Graph* graph, int *k, double*** T){
 /** MAIN **/
 int main(int argc, char* argv[]) {
     
-    double** weighted_mat, **input_matrix, **laplacian_mat, *diagonal_degree_array, **centroids_mat;
+    double** weighted_mat, **input_matrix, **laplacian_mat, *diagonal_degree_array;
     int *whichClusterArray;
     char* file_name, *goal;
     FILE* file;
@@ -722,14 +725,14 @@ int main(int argc, char* argv[]) {
 
     if (!strcmp(goal, "spk")) {
         laplacian_mat = allocateMatrix(N, N);
-        centroids_mat = allocateMatrix(K, K);
+        /* printf("K in main is: %d\n", K);
+        centroids_mat = allocateMatrix(K, K); */
         whichClusterArray = (int*)calloc(N,sizeof(int));
         assert(whichClusterArray && ERROR_OCCURED);
         eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
         assert(eigensArray && ERROR_OCCURED);
-        runSpkFlow(graph, laplacian_mat, eigensArray,centroids_mat, whichClusterArray, TRUE);
+        runSpkFlow(graph, laplacian_mat, eigensArray, whichClusterArray, TRUE);
         freeMatrix(laplacian_mat);
-        freeMatrix(centroids_mat);
         free(whichClusterArray);
         freeEigensArray(eigensArray);
     }
