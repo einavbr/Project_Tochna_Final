@@ -95,7 +95,7 @@ static PyObject* pythonRunJacobiFlow(PyObject * self, PyObject * args){
     assert(laplacian_mat && ERROR_OCCURED);
     eigensArray = (Eigen**)malloc(graph->size * sizeof(Eigen*));
     assert(eigensArray && ERROR_OCCURED);
-    runJacobiFlow(graph, laplacian_mat, eigensArray, TRUE);
+    runJacobiFlowForSpk(graph, laplacian_mat, eigensArray, TRUE);
 
     freeEigensArray(eigensArray);
     freeMatrix(laplacian_mat);

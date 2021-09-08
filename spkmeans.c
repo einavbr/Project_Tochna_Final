@@ -14,6 +14,32 @@ double calcEuclideanNorm(double* vector1, double* vector2, int len);
 void printMatrix(int rows, int cols, double** matrix);
 void printArray(int len, double* matrix);
 
+/** ---------------------------------- HANDLE INPUT ---------------------------------------- **/
+
+void ingestInput(double** input_matrix, FILE* file){
+    char* point, *line;
+    int i, j;
+
+    fseek(file, 0, SEEK_SET);
+    i = 0;
+    line = (char*) malloc(1000 * sizeof(char));
+    assert(line && ERROR_OCCURED);
+    while (fgets(line, 1000, file) != NULL) {
+        j = 0;
+        point = strtok(line, ",");
+        while (point != NULL) {
+            input_matrix[i][j] = atof(point);
+            point = strtok(NULL, ",");
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    DIM = j;
+    N = i;
+
+    free(line);
+}
+
 /** ---------------------------------- GRAPH FUNCTIONS ---------------------------------------- **/
 
 void fillWeightedMat(double** vertices, double** weighted_mat,int N){
@@ -47,28 +73,9 @@ void fillDiagonalDegreeArray(double** weighted_mat, double* diagonal_degree_arra
     }
 }
   
-void constructGraph(FILE* file, double** vertices, double** weighted_mat, double* diagonal_degree_array, Graph* graph){
-    char* point, *line;
-    int i, j;
-
-    fseek(file, 0, SEEK_SET);
-    i = 0;
-    line = (char*) malloc(1000 * sizeof(char));
-    assert(line && ERROR_OCCURED);
-    while (fgets(line, 1000, file) != NULL) {
-        j = 0;
-        point = strtok(line, ",");
-        while (point != NULL) {
-            vertices[i][j] = atof(point);
-            point = strtok(NULL, ",");
-            j = j + 1;
-        }
-        i = i + 1;
-    }
-    DIM = j;
-    N = i;
-    graph->size = i;
-    graph->dim = j;
+void constructGraph(double** vertices, double** weighted_mat, double* diagonal_degree_array, Graph* graph){
+    graph->size = N;
+    graph->dim = DIM;
 
     fillWeightedMat(vertices, weighted_mat, N);
     fillDiagonalDegreeArray(weighted_mat, diagonal_degree_array, N);
@@ -76,7 +83,6 @@ void constructGraph(FILE* file, double** vertices, double** weighted_mat, double
     graph->vertices = vertices;
     graph->weighted_mat = weighted_mat;
     graph->diagonal_degree_array = diagonal_degree_array;
-    free(line);
 }
 
 /** ---------------------------------- PRINTS ---------------------------------------- **/
@@ -201,7 +207,6 @@ void freeMatrix(double **m){
 void freeGraph(Graph* graph){
     free(graph->diagonal_degree_array);
     freeMatrix(graph->weighted_mat);
-    freeMatrix(graph->vertices);
     free(graph);
 }
 /** ---------------------------------- CALCULATIONS ---------------------------------------- **/
@@ -457,7 +462,7 @@ Graph* pythonGraphInit(char* k, char* file_name) {
     assert(diagonal_degree_array && ERROR_OCCURED);
     graph = (Graph*) malloc(sizeof (Graph));
     assert(graph && ERROR_OCCURED);
-    constructGraph(file, vertices, weighted_mat, diagonal_degree_array, graph);
+    constructGraph(vertices, weighted_mat, diagonal_degree_array, graph);
     return graph;
 }
 
@@ -487,24 +492,12 @@ void runLnormFlow(Graph* graph, double** laplacian_mat, int print_bool){
     }
 }
 
-void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int printBool) {
-    /** 
-     * Calculate and output the eigenvalues and eigenvectors as described in 1.2.1.
-     * 
-     * Once done, the values on the diagonal of A are eigenvalues
-     * and the columns of V are eigenvectors 
-     * 
-     * The function should print appropriate output if print == True
-     * and the eigensArray should be ORDERED with all eigenvalues and eigenvectors. 
-     * Use sortEigens()
-     */
+void runJacobiFlow(double** A, Eigen** eigensArray, int printBool){
     int i, j, pivot_i, pivot_j, iter_num;
     double pivot, c, t, s;
     double** A_tag, **V;
     double* newV_col_i, *newV_col_j;
 
-    /* first A mat is the laplacian */
-    runLnormFlow(graph, A, FALSE);
     A_tag = allocateMatrix(N, N);
     memcpy_matrix(A, A_tag, N, N);
     V = allocateMatrix(N, N);
@@ -556,7 +549,6 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int printBool)
            eigensArray[i]->eigenvector[j] = V[i][j];
        }
     }
-
     free(newV_col_i);
     free(newV_col_j);
     freeMatrix(A_tag);
@@ -565,7 +557,23 @@ void runJacobiFlow(Graph* graph, double** A, Eigen** eigensArray, int printBool)
     if (printBool){
         printEigens(eigensArray, N);
     }
+}
 
+void runJacobiFlowForSpk(Graph* graph, double** A, Eigen** eigensArray) {
+    /** 
+     * Calculate and output the eigenvalues and eigenvectors as described in 1.2.1.
+     * 
+     * Once done, the values on the diagonal of A are eigenvalues
+     * and the columns of V are eigenvectors 
+     * 
+     * The function should print appropriate output if print == True
+     * and the eigensArray should be ORDERED with all eigenvalues and eigenvectors. 
+     * Use sortEigens()
+     */
+
+    /* first A mat is the laplacian */
+    runLnormFlow(graph, A, FALSE);
+    runJacobiFlow(A, eigensArray, FALSE);
     /* sort for future use */
     qsort(eigensArray, N, sizeof(Eigen*), eigenComperator);
 }
@@ -577,8 +585,8 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
      */
 
     /** Algorithm:
-     * 1. runLnormFlow (included in runJacobiFlow)
-     * 2. runJacobiFlow
+     * 1. runLnormFlow (included in runJacobiFlowForSpk)
+     * 2. runJacobiFlowForSpk
      * 3. if k==0: k = run_eigengap_heuristic(eigenvalues)
      * 4. U = transpose_matrix(eigenvectors[:k])
      * 5. T = renormalize_mat(U)
@@ -587,7 +595,7 @@ void runSpkFlow(Graph* graph, double** laplacian_mat, Eigen** eigensArray, doubl
      */
     double** U, **T;
 
-    runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
+    runJacobiFlowForSpk(graph, laplacian_mat, eigensArray);
 
     if (K == 0) {
         K = runEigengapHeuristic(eigensArray);
@@ -612,8 +620,8 @@ void runSpkFlowPython(Graph* graph, int *k, double*** T){
      */
 
     /** Algorithm:
-     * 1. runLnormFlow (included in runJacobiFlow)
-     * 2. runJacobiFlow
+     * 1. runLnormFlow (included in runJacobiFlowForSpk)
+     * 2. runJacobiFlowForSpk
      * 3. if k==0: k = run_eigengap_heuristic(eigenvalues)
      * 4. U = transpose_matrix(eigenvectors[:k])
      * 5. T = renormalize_mat(U)
@@ -628,7 +636,7 @@ void runSpkFlowPython(Graph* graph, int *k, double*** T){
     eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
     assert(eigensArray && ERROR_OCCURED);
 
-    runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
+    runJacobiFlowForSpk(graph, laplacian_mat, eigensArray);
 
     if (K == 0) {
         K = runEigengapHeuristic(eigensArray);
@@ -651,7 +659,7 @@ void runSpkFlowPython(Graph* graph, int *k, double*** T){
 /** MAIN **/
 int main(int argc, char* argv[]) {
     
-    double** weighted_mat, **vertices, **laplacian_mat, *diagonal_degree_array, **centroids_mat;
+    double** weighted_mat, **input_matrix, **laplacian_mat, *diagonal_degree_array, **centroids_mat;
     int *whichClusterArray;
     char* file_name, *goal;
     FILE* file;
@@ -689,14 +697,26 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
+    input_matrix = allocateMatrix(N, DIM);
+    ingestInput(input_matrix, file);
+
+    /* handle jacobi goal */
+    if (!strcmp(goal, "jacobi")) {
+        eigensArray = (Eigen**)malloc(N * sizeof(Eigen*));
+        assert(eigensArray && ERROR_OCCURED);
+        runJacobiFlow(input_matrix, eigensArray, TRUE);
+        freeMatrix(input_matrix);
+        freeEigensArray(eigensArray);
+        return 1;
+    }
+
     /* Create the graph */
-    vertices = allocateMatrix(N, DIM);
     weighted_mat = allocateMatrix(N, N);
     diagonal_degree_array = (double*)calloc(N, sizeof(double));
     assert(diagonal_degree_array && ERROR_OCCURED);
     graph = (Graph*)malloc(sizeof (Graph));
     assert(graph && ERROR_OCCURED);
-    constructGraph(file, vertices, weighted_mat, diagonal_degree_array, graph);
+    constructGraph(input_matrix, weighted_mat, diagonal_degree_array, graph);
 
     if (!strcmp(goal, "spk")) {
         laplacian_mat = allocateMatrix(N, N);
@@ -722,21 +742,13 @@ int main(int argc, char* argv[]) {
         runLnormFlow(graph, laplacian_mat, TRUE);
         freeMatrix(laplacian_mat);
     }
-    else if (!strcmp(goal, "jacobi")) {
-        laplacian_mat = allocateMatrix(N, N);
-        eigensArray = (Eigen**)malloc(N * sizeof(Eigen*));
-        assert(eigensArray && ERROR_OCCURED);
-        runJacobiFlow(graph, laplacian_mat, eigensArray, TRUE);
-        freeMatrix(laplacian_mat);
-        freeEigensArray(eigensArray);
-    }
     else {
         printf("%s", INVALID_INPUT);
         exit(1);
     }
     
     fclose(file);
-    
+    freeMatrix(input_matrix);
     freeGraph(graph);
 
    return 1; 
