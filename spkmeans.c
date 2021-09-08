@@ -107,6 +107,9 @@ void printEigens(Eigen** eigens){
 
     for (i=0; i < N; i++) {
         printArray(N, eigens[i]->eigenvector);
+        if (i != N-1) {
+            printf("\n");
+        }
     }
 }
 
