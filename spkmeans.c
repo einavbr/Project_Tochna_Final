@@ -296,10 +296,6 @@ int eigenComperator(const void *eigen1, const void *eigen2){
     double eigenValueOne, eigenValueTwo;
     eigenValueOne = ((*(Eigen **)eigen1)) -> eigenvalue;
     eigenValueTwo = ((*(Eigen **)eigen2)) -> eigenvalue;
-    /* printf("eigenOne->eigenvalue = %f\n", eigenOne->eigenvalue);
-    printf("eigenTwo->eigenvalue = %f\n", eigenTwo->eigenvalue); */
-    printf("eigenvalue1: %f\n", eigenValueOne);
-    printf("eigenvalue2: %f\n", eigenValueTwo);
     if (eigenValueOne - eigenValueTwo < 0){
         return -1;
     }
@@ -315,10 +311,8 @@ int eigenComperator(const void *eigen1, const void *eigen2){
 
 double calcOff(double** mat) {
     int i, j;
-  /*  double sumTot, sumDiag, powVal;*/
     double sumTot, powVal;
     sumTot = 0;
-   /* sumDiag = 0;*/
     for (i = 0; i < N ; i++) {
         for (j = i+1; j < N ; j++) {
             powVal = pow(mat[i][j], 2);
@@ -835,7 +829,7 @@ int main(int argc, char* argv[]) {
     if (!strcmp(goal, "spk")) {
         printf("in spk flow\n");
         laplacian_mat = allocateMatrix(N, N);
-        centroids_mat = allocateMatrix(N, DIM);
+        centroids_mat = allocateMatrix(K, K);
         whichClusterArray = (int*)calloc(N,sizeof(int));
         assert(whichClusterArray && ERROR_OCCURED);
         eigensArray = (Eigen**)malloc(N * N * sizeof(Eigen*));
