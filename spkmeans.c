@@ -22,6 +22,7 @@ void ingestInput(double** input_matrix, FILE* file){
 
     fseek(file, 0, SEEK_SET);
     i = 0;
+    j = 0;
     line = (char*) malloc(1000 * sizeof(char));
     assert(line && ERROR_OCCURED);
     while (fgets(line, 1000, file) != NULL) {
