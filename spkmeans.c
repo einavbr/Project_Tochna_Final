@@ -129,7 +129,9 @@ void printMatrix(int rows, int cols, double** matrix) {
                 printf("%.4f,", curr); 
             }
         }
-        printf("\n");
+        if (i != rows-1){
+            printf("\n");
+        }
     }
 }
 
