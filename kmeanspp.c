@@ -2,40 +2,12 @@
 
 int POINT_SIZE, N, K;
 
-void printMatrixpp(int rows, int cols, double** matrix);
-void printMatrixintpp(int rows, int cols, int* matrix);
 int findClosestClusterpp(double* point, double** centroidArray);
 void changeClusterpp(int i, int newCluster, int* whichClusterArray);
 void makeCendroidsAndAmountZeropp(double** centroidsArray, int* amount);
 void calcNewCentroidspp(double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster);
 void free_double_pointerpp(double **array, int arrayLen);
 double** kmeanspp(double** points, double** centroids, int k, int n, int point_size);
-
-void printMatrixpp(int rows, int cols, double** matrix) {
-    int i, j; 
-    for (i = 0; i < rows; i++) {
-        for (j = 0; j < cols; j++) {
-            if (j == cols - 1) {
-                printf("%.4f", matrix[i][j]);
-            }
-            else {
-                printf("%.4f,", matrix[i][j]);
-            }
-        }
-        printf("\n");
-    }
-    printf("\n\n");
-}
-
-void printMatrixintpp(int rows, int cols, int* matrix) {
-    int i, j;
-    for (i = 0; i < rows; i++) {
-        for (j = 0; j < cols; j++) {
-            printf("%d ,", matrix[i]);
-        }
-        printf("\n");
-    }
-}
 
 int findClosestClusterpp(double* point, double** centroidArray){
     double mindist, sum;

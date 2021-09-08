@@ -104,21 +104,17 @@ def get_pivot(A):
 
 def obtain_c_t(A_ii, A_jj, A_ij):
     # TODO : given a pivot value, return c and t as explained in the project
-    print(f'A_ij = {A_ij}, A_ii = {A_ii}, A_jj = {A_jj}')
     theta = (A_jj - A_ii) / A_ij
     sign = np.sign(theta)
     if sign == 0: 
         sign = 1
-    print(f'theta = {theta}, sign = {sign}')
     t = sign / (abs(theta)+math.sqrt(theta**2 + 1))
     c = 1 / math.sqrt(t**2 + 1)
     return c, t
 
 def get_rotation_mat(pivot_i, pivot_j, A_ij, A):
-    print(f'pivot_i = {pivot_i}, pivot_j = {pivot_j}')
     c, t = obtain_c_t(A[pivot_i][pivot_i], A[pivot_j][pivot_j], A_ij)
     s = c * t
-    print(f'c = {c}, t = {t}, s = {s}')
     rotation_mat = np.zeros(A.shape, dtype = np.double)
     for i in range(len(A)):
         if i == pivot_i or i == pivot_j:

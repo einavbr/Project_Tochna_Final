@@ -14,10 +14,8 @@
  */
 
 static PyObject* pythonRunWamFlow(PyObject * self, PyObject * args){
-    int i, j;
     char* k, *file_name;
     Graph* graph;
-    PyObject *PyWeightsMat, *PyWeightsRow;
 
     if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
         return NULL;
@@ -26,28 +24,18 @@ static PyObject* pythonRunWamFlow(PyObject * self, PyObject * args){
     if (graph == NULL){
         return NULL;
     }
-    PyWeightsMat = PyList_New(graph->size);
-    if (!PyWeightsMat){
-        return NULL;
-    }
-    for (i = 0; i < graph->size; i++){
-        PyWeightsRow = PyList_New(graph->size);
-        for (j = 0; j < graph->size; j++){
-            PyList_SET_ITEM(PyWeightsRow, j, Py_BuildValue("d", graph->weighted_mat[i][j]));
-        }
-        PyList_SET_ITEM(PyWeightsMat, i, Py_BuildValue("O", PyWeightsRow));
-    }
+    printMatrix(graph->size, graph->size, graph->weighted_mat);
 
     freeGraph(graph);
 
-    return PyWeightsMat;
+    return PyLong_FromLong(42);
 }
 
 static PyObject* pythonRunDdgFlow(PyObject * self, PyObject * args){
-    int i;
+    int i, n;
     char* k, *file_name;
     Graph* graph;
-    PyObject *PyDiagDegreeArray;
+    double** ddg_mat;
 
     if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
         return NULL;
@@ -56,25 +44,22 @@ static PyObject* pythonRunDdgFlow(PyObject * self, PyObject * args){
     if (graph == NULL){
         return NULL;
     }
-    PyDiagDegreeArray = PyList_New(graph->size);
-    if (!PyDiagDegreeArray){
-        return NULL;
+    n = graph->size;
+    ddg_mat = allocateMatrix(n, n);
+    for (i=0 ; i<n ; i++){
+        ddg_mat[i][i] = graph->diagonal_degree_array[i];
     }
-    for (i = 0; i < graph->size; i++){
-        PyList_SET_ITEM(PyDiagDegreeArray, i, Py_BuildValue("d", graph->diagonal_degree_array[i]));
-    }
+    printMatrix(n, n, ddg_mat);
 
     freeGraph(graph);
 
-    return PyDiagDegreeArray;
+    return PyLong_FromLong(42);
 }
 
 static PyObject* pythonRunLnormFlow(PyObject * self, PyObject * args){
-    int i, j;
     char* k, *file_name;
     Graph* graph;
     double** laplacian_mat;
-    PyObject *PyLaplacianMat, *PyLaplacianRow;
 
     if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
         return NULL;
@@ -85,31 +70,19 @@ static PyObject* pythonRunLnormFlow(PyObject * self, PyObject * args){
     }
     laplacian_mat = allocateMatrix(graph->size, graph->size);
     assert(laplacian_mat && ERROR_OCCURED);
-    runLnormFlow(graph, laplacian_mat, FALSE);
-    PyLaplacianMat = PyList_New(graph->size);
-    if (!PyLaplacianMat){
-        return NULL;
-    }
-    for (i = 0; i < graph->size; i++){
-        PyLaplacianRow = PyList_New(graph->size);
-        for (j = 0; j < graph->size; j++){
-            PyList_SET_ITEM(PyLaplacianRow, j, Py_BuildValue("d", laplacian_mat[i][j]));
-        }
-        PyList_SET_ITEM(PyLaplacianMat, i, Py_BuildValue("O", PyLaplacianRow));
-    }
-    /* free laplacian matrix */
+    runLnormFlow(graph, laplacian_mat, TRUE);
+
+    freeMatrix(laplacian_mat);
     freeGraph(graph);
 
-    return PyLaplacianMat;
+    return PyLong_FromLong(42);
 }
 
 static PyObject* pythonRunJacobiFlow(PyObject * self, PyObject * args){
-    int i, j;
     char* k, *file_name;
     Graph* graph;
     Eigen** eigensArray;
     double** laplacian_mat;
-    PyObject *PyJacobiMat, *PyJacobiRow;
 
     if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
         return NULL;
@@ -122,31 +95,20 @@ static PyObject* pythonRunJacobiFlow(PyObject * self, PyObject * args){
     assert(laplacian_mat && ERROR_OCCURED);
     eigensArray = (Eigen**)malloc(graph->size * sizeof(Eigen*));
     assert(eigensArray && ERROR_OCCURED);
-    runJacobiFlow(graph, laplacian_mat, eigensArray, FALSE);
-    /* free laplacian matrix */
-    PyJacobiMat = PyList_New(graph->size);
-    if (!PyJacobiMat){
-        return NULL;
-    }
-    for (i = 0; i < graph->size; i++){
-        PyJacobiRow = PyList_New(graph->size);
-        for (j = 0; j < graph->size; j++){
-            PyList_SET_ITEM(PyJacobiRow, j, Py_BuildValue("d", eigensArray[i][j]));
-        }
-        PyList_SET_ITEM(PyJacobiMat, i, Py_BuildValue("O", PyJacobiRow));
-    }
-    /* free eigensArray */
+    runJacobiFlow(graph, laplacian_mat, eigensArray, TRUE);
+
+    freeEigensArray(eigensArray);
+    freeMatrix(laplacian_mat);
     freeGraph(graph);
 
-    return PyJacobiMat;
+    return PyLong_FromLong(42);
 }
 
 static PyObject* pythonRunSpkFlow(PyObject * self, PyObject * args){
     int i, j, N, DIM, K;
     char* k, *file_name;
     Graph* graph;
-    double** T/* , ** centroids_mat */;
-    /* int* whichClusterArray; */
+    double** T;
     PyObject *PyTMat, *PyTRow, *PyRetTuple;
 
     if(!PyArg_ParseTuple(args, "ss", &k, &file_name)){
@@ -187,34 +149,22 @@ static PyObject* pythonRunSpkFlow(PyObject * self, PyObject * args){
 }
 
 // Kmeans++ Module method definitions
-static double ** initVectorsArray (PyObject *VectorsList, int size, int point_size){
+static double ** initVectorsArray (PyObject *VectorsList, int rows, int cols){
     double **vectors;
     PyObject *curVector, *coordinate;
     int i, j;
-    PyObject* repr, *str;
-    const char *bytes;
     
-    vectors = (double**) malloc(size * sizeof(double*));
+    vectors = (double**) malloc(rows * sizeof(double*));
     assert(vectors != NULL && ERROR_OCCURED);
-    printf("initVectorsArray: allocated vectors with %d rows and %d columns\n", size, point_size);
-    for (i = 0; i < size; i++){
+
+    /* copy pyList into vectors */
+    for (i = 0; i < rows; i++){
         curVector = PyList_GetItem(VectorsList, i);
-        vectors[i] = (double*) malloc(point_size * sizeof(double*));
+        vectors[i] = (double*) malloc(cols * sizeof(double*));
         assert(vectors[i] != NULL && ERROR_OCCURED);
-        /* for (i = 0; i < point_size ; i++){
-            repr = PyObject_Repr(curVector[i]);
-            str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
-            *bytes = PyBytes_AS_STRING(str);
-            printf("REPR: %s\n", bytes);
-        } */
-        for (j = 0; j < point_size; j++){
+        for (j = 0; j < cols; j++){
             coordinate = PyList_GetItem(curVector, j);
-            repr = PyObject_Repr(coordinate);
-            str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
-            bytes = PyBytes_AS_STRING(str);
-            printf("REPR: %s\n", bytes);
             vectors[i][j] = PyFloat_AsDouble(coordinate);
-            printf("initVectorsArray: added coordinate %f\n", vectors[i][j]);
         }
     }
 
@@ -224,72 +174,35 @@ static double ** initVectorsArray (PyObject *VectorsList, int size, int point_si
 static PyObject* pythonRunkmeanspp(PyObject *self, PyObject *args) {
     PyObject *pyPoints;
     PyObject *pyCentroids;
-    PyObject *pyRes;
-    PyObject *pyThisCentroid, *curVector, *coordinate;
-    int k, n, i, j, point_size;
+    int k, n, point_size;
     double **points, **centroids, **res;
-    PyObject* repr, *str;
-    const char *bytes;
 
     if(!PyArg_ParseTuple(args, "OOiii", &pyPoints, &pyCentroids, &k, &n, &point_size)){
         return NULL;
     }
-    printf("here\n");
     if(pyCentroids == NULL){
         printf("%s", ERROR_OCCURED);
         return NULL;
     }
-    printf("here2\n");
-/*     for (i = 0; i < k; i++){
-        curVector = PyList_GetItem(pyCentroids, i);
-        for (j = 0; j < k; j++){
-            coordinate = PyList_GetItem(curVector, j);
-            repr = PyObject_Repr(coordinate);
-            str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
-            bytes = PyBytes_AS_STRING(str);
-            printf("REPR: %s\n", bytes);
-        }
-    } */
     if (k >= n){
         printf("%s", INVALID_INPUT);
         return NULL;
     }
 
-    printf("starting kmeans\n");
-    points = initVectorsArray(pyPoints, n, point_size);
-    printf("initialized points\n");
-    centroids = initVectorsArray(pyCentroids, k, k); /* ABAAYA */
-    printf("initialized centroids\n");
+    points = initVectorsArray(pyPoints, n, k);
+    centroids = initVectorsArray(pyCentroids, k, k);
     res = kmeanspp(points, centroids, k, n, k);
-    printf("finished kmeanspp\n");
     
     if (res == NULL){
         return NULL;
     }
-    pyRes = PyList_New(k);
-    if (!pyRes){
-        return NULL;
-    }
-    for (i = 0; i < k; i++) {
-        pyThisCentroid = PyList_New(k);
-        for (j = 0; j < k; j++){
-            PyList_SET_ITEM(pyThisCentroid, j, Py_BuildValue("d", res[i][j]));
-        }
-        PyList_SET_ITEM(pyRes, i, Py_BuildValue("O", pyThisCentroid));
-    }
-    printf("initialized pyRes\n");
+
+    printMatrix(k, k, res);
 
     free_double_pointerpp(centroids, k);
     free_double_pointerpp(points, n);
 
-    /* repr = PyObject_Repr(pyRes);
-    str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
-    bytes = PyBytes_AS_STRING(str);
-
-    printf("REPR: %s\n", bytes); */
-
-    /* return PyLong_FromDouble(42); */
-    return pyRes;
+    return PyLong_FromLong(42);
 }
 
 

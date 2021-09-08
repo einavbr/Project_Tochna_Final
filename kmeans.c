@@ -9,7 +9,6 @@ void changeCluster(int i, int newCluster, int* whichClusterArray);
 void calcNewCentroids(double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster, int N, int sizeOfPoint);
 void makeCendroidsAndAmountZero(double** centroidsArray,int* amount, int K, int pointSize);
 void free_double_pointer(double **array, int arrayLen);
-void printMatrix(int rows, int cols, double** matrix);
 
 void init(int K, double** datapointsArray, double** centroidsArray, int* whichClusterArray, int* amountOfPointsInCluster) {
     int i, j;
@@ -17,13 +16,10 @@ void init(int K, double** datapointsArray, double** centroidsArray, int* whichCl
     for (i = 0; i < K; i++) {
         for(j=0; j < K; j++){
             centroidsArray[i][j] = datapointsArray[i][j];
-            printf("Initial Cent Mat in %d,%d is: %f\n",i,j,centroidsArray[i][j]);
         }
         whichClusterArray[i] = i;
         amountOfPointsInCluster[i] = 1;
     }
-    printf("initial centroids:\n");
-    printMatrix(K,K,centroidsArray);
 }
 
 int findClosestCluster(double* point, double** centroidArray, int K, int sizeOfPoint){
@@ -85,22 +81,17 @@ void free_double_pointer(double **array, int arrayLen){
 }
 
 int kmeans(int K,int N, int DIM,double** T, double** centroids_mat,int* whichClusterArray) {
-    int i,itermax, iteration, isChanged, currentCluster, newCluster, * amountOfPointsInCluster;
+    int i, iteration, isChanged, currentCluster, newCluster;
+    int* amountOfPointsInCluster;
     double * point;
 
-    printf("in kmeans!!\n");
-    itermax = 300;
-    printf("K in Kmenas is: %d",K);
     amountOfPointsInCluster = (int*)calloc(K, sizeof(int));
     assert(amountOfPointsInCluster && "amountOfPointsArray allocation failed");
-    printf("T in Kmeans is:\n");
-    printMatrix(N,K,T);
     init(K,T, centroids_mat, whichClusterArray, amountOfPointsInCluster);
-    printf("finished kmeans init\n");
     isChanged = 1;
     iteration = 0;
     while (isChanged == 1) {
-        if (iteration == itermax) {
+        if (iteration == MAX_ITER_KMEANS) {
             printf("main: max iteration reached\n");
             break;
         }
@@ -122,6 +113,5 @@ int kmeans(int K,int N, int DIM,double** T, double** centroids_mat,int* whichClu
         makeCendroidsAndAmountZero(centroids_mat, amountOfPointsInCluster, K, DIM);
         calcNewCentroids(T, centroids_mat, whichClusterArray, amountOfPointsInCluster, N, DIM); /* calc new centroid of new cluster for point[j] */
     }
-    printf("finished kmeans!!\n");
     return 1; 
 }

@@ -8,13 +8,9 @@ INVALID_INPUT = 'Invalid Input!'
 ERROR_OCCURED = 'An Error Has Occured'
 MAX_ITER_KMEANS = 300
 
-# Functions on Matrices:
-def print_matrix(A, message = ''):
-    # TODO : print the matrix, take print func from PT1 or PT2
-    print(message)
-    np.set_printoptions(precision=4, suppress=True)
-    print(A)
-    print('\n')
+def print_list(lst):
+    str_list = str(lst)
+    print(str_list.replace(' ','').replace('[','').replace(']',''))
 
 #finding centroids indexes 
 def calc_centroids_indexes(k, all_points, point_size, N, max_iter):
@@ -58,51 +54,39 @@ def indexes_to_centroids(all_points, Centroids_Indexes,k):
     return res
 
 # MAIN
-try:
-    K = int(sys.argv[1])
-    print(f'k in python is: {K}')
-except Exception:
-    print (INVALID_INPUT)
-if K < 0:
-    raise Exception(INVALID_INPUT)
-# NOTE : if k == 0 - use heuristic
+def main():
+    try:
+        K = int(sys.argv[1])
+    except Exception:
+        print (INVALID_INPUT)
+    if K < 0:
+        raise Exception(INVALID_INPUT)
+    # NOTE : if k == 0 - use heuristic
 
-try:
-    FILE_NAME = sys.argv[3]
-    print(f'file_name in python is: {FILE_NAME}')
-except Exception:
-    print (INVALID_INPUT)
+    try:
+        FILE_NAME = sys.argv[3]
+    except Exception:
+        print (INVALID_INPUT)
 
-try:
-    GOAL = sys.argv[2]
-except Exception:
-    print(INVALID_INPUT)
+    try:
+        GOAL = sys.argv[2]
+    except Exception:
+        print(INVALID_INPUT)
 
-if GOAL == 'wam':
-    wieghted_mat = spkmeans.pythonRunWamFlow(str(K), FILE_NAME)
-    print('print wam in python')
-    print_matrix(np.array(wieghted_mat))
-elif GOAL == 'ddg':
-    diag_degree_arr = spkmeans.pythonRunDdgFlow(str(K), FILE_NAME)
-    print('print ddg in python')
-    N = len(diag_degree_arr)
-    diag_degree_mat = np.zeros((N, N))
-    for i in range(N):
-        diag_degree_mat[i][i] = diag_degree_arr[i]
-    print_matrix(diag_degree_mat)
-elif GOAL == 'lnorm':
-    laplacian_mat = spkmeans.pythonRunLnormFlow(str(K), FILE_NAME)
-    print('print lnorm in python')
-    print_matrix(np.array(laplacian_mat))
-elif GOAL == 'jacobi':
-    jacobi_mat = spkmeans.pythonRunJacobiFlow(str(K), FILE_NAME)
-    print_matrix(np.array(jacobi_mat))
-elif GOAL == 'spk':
-    K, DIM, N, T = spkmeans.pythonRunSpkFlow(str(K), FILE_NAME)
-    print(K)
-    print(T)
-    centroids_indexes = calc_centroids_indexes(K, T, DIM, N, MAX_ITER_KMEANS)
-    centroids = indexes_to_centroids(T, centroids_indexes, K)
-    print(f'centroids in python is: {centroids}')
-    centroids_array = spkmeans.pythonRunkmeanspp(T, centroids, K, N, DIM)
-    print_matrix(np.array(centroids_array))
+    if GOAL == 'wam':
+        spkmeans.pythonRunWamFlow(str(K), FILE_NAME)
+    elif GOAL == 'ddg':
+        spkmeans.pythonRunDdgFlow(str(K), FILE_NAME)
+    elif GOAL == 'lnorm':
+        spkmeans.pythonRunLnormFlow(str(K), FILE_NAME)
+    elif GOAL == 'jacobi':
+        spkmeans.pythonRunJacobiFlow(str(K), FILE_NAME)
+    elif GOAL == 'spk':
+        K, DIM, N, T = spkmeans.pythonRunSpkFlow(str(K), FILE_NAME)
+        centroids_indexes = calc_centroids_indexes(K, T, DIM, N, MAX_ITER_KMEANS)
+        print_list(centroids_indexes)
+        centroids = indexes_to_centroids(T, centroids_indexes, K)
+        spkmeans.pythonRunkmeanspp(T, centroids, K, N, DIM)
+
+# call main
+main()
