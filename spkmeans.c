@@ -393,7 +393,6 @@ void calcT(double **U, double **T){
     double* zeros;
 
     zeros = (double*)calloc(K, sizeof(double));
-    printf("K is: %d\n",K);
     assert(zeros && ERROR_OCCURED);
     for(i=0 ; i<N ; i++){
         rowLength = calcEuclideanNorm(U[i], zeros, K);
@@ -411,11 +410,6 @@ int runEigengapHeuristic(Eigen** eigensArray) {
     maxI = -1;
     maxGap = -1.0;
     boundI = (N / 2) + 1;
-
-    printf("runEigengapHeuristic: N is: %d\n", N);
-    printf("runEigengapHeuristic: boundI is: %d\n", boundI);
-    /* printf("runEigengapHeuristic: eigensArray is:\n");
-    printEigens(eigensArray); */
 
     for (i=1; i < boundI; i++) {
         gap = eigensArray[i]->eigenvalue - eigensArray[i-1]->eigenvalue;
