@@ -47,7 +47,7 @@ static PyObject* pythonRunDdgFlow(PyObject * self, PyObject * args){
     n = graph->size;
     ddg_mat = allocateMatrix(n, n);
     for (i=0 ; i<n ; i++){
-        ddg_mat[i][i] = graph->diagonal_degree_array[i];
+        ddg_mat[i][i] = 1.0 / pow(graph->diagonal_degree_array[i], 2);
     }
     printMatrix(n, n, ddg_mat);
 

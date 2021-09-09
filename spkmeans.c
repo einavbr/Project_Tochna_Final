@@ -670,8 +670,8 @@ void runSpkFlowPython(Graph* graph, int *k, double*** T){
 /** MAIN **/
 int main(int argc, char* argv[]) {
     
-    double** weighted_mat, **input_matrix, **laplacian_mat, *diagonal_degree_array;
-    int *whichClusterArray;
+    double** weighted_mat, **input_matrix, **laplacian_mat, **ddg_mat, *diagonal_degree_array;
+    int i, *whichClusterArray;
     char* file_name, *goal;
     FILE* file;
     Graph* graph;
@@ -747,7 +747,11 @@ int main(int argc, char* argv[]) {
         printMatrix(N, N, graph->weighted_mat);
     }
     else if (!strcmp(goal, "ddg")) {
-        printArray(N, graph->diagonal_degree_array);
+        ddg_mat = allocateMatrix(N, N);
+        for (i=0 ; i<N ; i++){
+            ddg_mat[i][i] = 1.0 / pow(graph->diagonal_degree_array[i], 2);
+        }
+        printMatrix(N, N, ddg_mat);
     }
     else if (!strcmp(goal, "lnorm")) {
         laplacian_mat = allocateMatrix(N, N);
